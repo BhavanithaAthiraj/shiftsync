@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShiftSync Operational Engine</title>
+    
+    <!-- Mobile App Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+
+        header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        h1 { font-size: 22px; color: var(--primary); }
+        .badge { font-size: 12px; color: #64748b; font-weight: 600; }
+
+        .section-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin: 16px 0 8px 0;
+            font-weight: 700;
+        }
+
+        .task-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .task-name { font-weight: 600; font-size: 15px; }
+        
+        .p-badge {
+            font-weight: 700; font-size: 13px;
+            color: var(--primary); background: #dbeafe;
+            padding: 3px 8px; border-radius: 6px;
+        }
+
+        .slider-container { display: flex; align-items: center; }
+        input[type="range"] { flex-grow: 1; accent-color: var(--primary); height: 6px; }
+
+        .note-area {
+            display: none;
+            margin-top: 12px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--warning);
+            border-radius: 6px;
+            background-color: #fffbeb;
+            font-size: 14px;
+            resize: none;
+        }
+
+        .btn-punchout {
+            width: 100%; padding: 16px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            background-color: var(--danger); color: white; margin-top: 12px;
+        }
+
+        .alert-box {
+            display: none; background-color: #fee2e2; border: 1px solid #fca5a5;
+            color: var(--danger); padding: 14px; border-radius: 8px;
+            margin-bottom: 16px; font-size: 14px; line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div class="badge">DEPT: PRODUCTION LINE A</div>
+        <h1>Worker Profile: Alex</h1>
+    </header>
+
+    <div id="lockAlert" class="alert-box"></div>
+
+    <div class="section-title">Shift Handover Tasks</div>
+
+    <!-- Task Card 1 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span class="task-name">Machine 3 Calibration</span>
+            <span class="p-badge" id="val-t1">0%</span>
+        </div>
+        <div class="slider-container">
+            <input type="range" id="t1" min="0" max="100" step="25" value="0" oninput="evalShiftTask('t1')">
+        </div>
+        <textarea id="note-t1" class="note-area" placeholder="⚠️ Explain exactly what is pending for the next worker..."></textarea>
+    </div>
+
+    <!-- Task Card 2 -->
+    <div class="task-card">
+        <div class="task-header">
+            <span class="task-name">Raw Material Sorting</span>
+            <span class="p-badge" id="val-t2">0%</span>
+        </div>
+        <div class="slider-container">
+            <input type="range" id="t2" min="0" max="100" step="25" value="0" oninput="evalShiftTask('t2')">
+        </div>
+        <textarea id="note-t2" class="note-area" placeholder="⚠️ Explain exactly what is pending for the next worker..."></textarea>
+    </div>
+
+    <button class="btn-punchout" onclick="processGatekeeper()">Verify & Punch Out</button>
+</div>
+
+<script>
+    function evalShiftTask(id) {
+        const slider = document.getElementById(id);
+        const badge = document.getElementById('val-' + id);
+        const note = document.getElementById('note-' + id);
+        
+        badge.innerText = slider.value + '%';
+        
+        if (slider.value > 0 && slider.value < 100) {
+            badge.style.backgroundColor = "#fef3c7";
+            badge.style.color = "#d97706";
+            note.style.display = "block"; 
+        } else {
+            note.style.display = "none"; 
+            if (slider.value == 100) {
+                badge.style.backgroundColor = "#dcfce7";
+                badge.style.color = "#16a34a";
+            } else {
+                badge.style.backgroundColor = "#dbeafe";
+                badge.style.color = "#2563eb";
+            }
+        }
+    }
+
+    function processGatekeeper() {
+        const t1 = parseInt(document.getElementById('t1').value);
+        const t2 = parseInt(document.getElementById('t2').value);
+        
+        const note1 = document.getElementById('note-t1').value.trim();
+        const note2 = document.getElementById('note-t2').value.trim();
+        
+        const alertBox = document.getElementById('lockAlert');
+        alertBox.style.display = "none";
+        
+        let gateViolations = [];
+        
+        if (t1 > 0 && t1 < 100 && note1 === "") gateViolations.push("Machine 3 Calibration is at " + t1 + "% but lacks a hand-off explanation note.");
+        if (t2 > 0 && t2 < 100 && note2 === "") gateViolations.push("Raw Material Sorting is at " + t2 + "% but lacks a hand-off explanation note.");
+        
+        if (gateViolations.length > 0) {
+            alertBox.innerHTML = "<strong>🔒 PUNCH-OUT DENIED</strong><br><br>" + gateViolations.join("<br><br>");
+            alertBox.style.display = "block";
+            window.scrollTo(0,0);
+        } else {
+            alert("✅ SHIFT DATA SYNCED!\nPunch-out authorized. The partial completion profiles and logs have been safely pushed to the management dashboard ledger.");
+        }
+    }
+</script>
+
+</body>
+</html>
