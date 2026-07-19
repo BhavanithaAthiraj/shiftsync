@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShiftSync Enterprise - Final Edition</title>
+    <title>ShiftSync Enterprise - Operational Engine</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -30,7 +29,7 @@
 
         .container {
             width: 100%;
-            max-width: 550px;
+            max-width: 600px;
             background: var(--surface);
             border-radius: 16px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -90,13 +89,6 @@
         }
         .metric-row { display: flex; justify-content: space-between; font-size: 13px; margin-top: 6px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px;}
         
-        .score-badge {
-            padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px;
-        }
-        .score-high { background: #dcfce7; color: var(--success); }
-        .score-med { background: #fef3c7; color: var(--warning); }
-        .score-low { background: #fee2e2; color: var(--danger); }
-
         .gatekeeper-box {
             background: #fef2f2; border: 1px solid #fee2e2;
             padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 13px;
@@ -110,194 +102,276 @@
         .tab-menu { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px;}
         .tab-link { font-size: 14px; font-weight: bold; color: #64748b; cursor: pointer; padding: 4px 8px;}
         .tab-link.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        .mgr-section { display: none; }
-        .mgr-section.active { display: block; }
+        .sub-section { display: none; }
+        .sub-section.active { display: block; }
+
+        /* Chat Window Styles */
+        .chat-container {
+            border: 1px solid var(--border); border-radius: 8px; height: 200px;
+            overflow-y: auto; padding: 10px; background: #fafafa; margin-bottom: 10px;
+        }
+        .chat-bubble {
+            background: #e2e8f0; padding: 6px 10px; border-radius: 12px;
+            margin-bottom: 6px; font-size: 13px; width: fit-content; max-width: 80%;
+        }
+        .chat-bubble.me { background: #dbeafe; align-self: flex-end; margin-left: auto; }
+        .chat-meta { font-size: 10px; color: #64748b; margin-bottom: 2px; }
     </style>
 </head>
 <body>
 
-<!-- VIEW 1: GATEWAY SELECTOR -->
+<!-- VIEW 1: SECURE LOGIN PROFILE -->
 <div id="authView" class="container view-panel active">
-    <h2>ShiftSync Gateway</h2>
-    <p style="color:#64748b; font-size:14px;">Select your node profile to interact with the facility network.</p>
+    <h2>ShiftSync Secure Portal</h2>
+    <p style="color:#64748b; font-size:14px;">Enter your absolute credentials to access your node profile.</p>
     
     <div class="form-group">
-        <label for="userSelect">Identify Profile Node:</label>
-        <select id="userSelect" class="form-control"></select>
+        <label>Worker ID / Manager ID:</label>
+        <input type="text" id="loginId" class="form-control" placeholder="e.g., EMP101">
     </div>
-    <button onclick="login()" class="btn btn-primary" style="width:100%;">Access Profile Node</button>
+    <div class="form-group">
+        <label>Secure Password:</label>
+        <input type="password" id="loginPass" class="form-control" placeholder="••••••••">
+    </div>
+    <button onclick="login()" class="btn btn-primary" style="width:100%;">Authenticate & Sign In</button>
 </div>
 
-<!-- VIEW 2: OUTBOUND WORKER SCREEN -->
-<div id="outboundView" class="container view-panel">
+<!-- VIEW 2: WORKER DASHBOARD (OUTBOUND & INBOUND COMBINED NATURALLY) -->
+<div id="workerDashboardView" class="container view-panel">
     <div class="nav-header">
         <div>
-            <strong id="outboundName"></strong>
-            <div style="font-size:12px; color:#64748b;" id="outboundDept"></div>
+            <strong id="wkDispName"></strong>
+            <div style="font-size:12px; color:#64748b;" id="wkDispMeta"></div>
         </div>
-        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Exit</button>
+        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Sign Out</button>
     </div>
 
-    <h3>📝 Build Shift Handover Queue</h3>
-    <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border);">
-        <div class="form-group">
-            <label>Task / Duty Description:</label>
-            <input type="text" id="taskDesc" class="form-control" placeholder="e.g., Clean CNC Lathe fluid filters">
-        </div>
-        <div class="task-input-row">
-            <div style="flex:1;">
-                <select id="taskType" class="form-control">
-                    <option value="Urgent">Urgent / Pending</option>
-                    <option value="Half-Done">Half-Done Task</option>
-                </select>
-            </div>
-            <div style="flex:1;" id="pctWrapper">
-                <input type="number" id="taskPct" class="form-control" placeholder="Completion %" min="1" max="99" value="50">
-            </div>
-        </div>
-        <button onclick="addTask()" class="btn btn-primary" style="width:100%; padding:8px;">+ Add Duty to Handover</button>
-    </div>
-
-    <div style="margin-top:15px;">
-        <strong>Live Handover Stream:</strong>
-        <div id="liveHandoverContainer" style="margin-top:8px;"></div>
-    </div>
-
-    <div id="outboundGatekeeper" class="gatekeeper-box">
-        <strong id="gkTitle" style="color:var(--danger)">🔒 Handover Pipeline Locked</strong>
-        <p id="gkMsg" style="margin:4px 0 0 0; color:#475569;">You must log at least 1 Urgent task and 1 Half-Done task before sign-out is allowed.</p>
-    </div>
-
-    <button id="punchOutBtn" class="btn btn-secondary" style="width:100%; margin-top:15px; cursor:not-allowed;" disabled onclick="executePunchOut()">PUNCH OUT & TRANSMIT</button>
-</div>
-
-<!-- VIEW 3: INBOUND WORKER SCREEN -->
-<div id="inboundView" class="container view-panel">
-    <div class="nav-header">
-        <div>
-            <strong id="inboundName"></strong>
-            <div style="font-size:12px; color:#64748b;">Role: Assigned Inbound Node</div>
-        </div>
-        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Exit</button>
-    </div>
-
-    <h3>📥 Assigned Handover Queue</h3>
-    <div id="inboundTasksContainer"></div>
-    <button onclick="executePunchInSignOff()" class="btn btn-success" style="width:100%; margin-top:15px;">COMMIT & UPDATE ACCOUNTABILITY METRICS</button>
-</div>
-
-<!-- VIEW 4: MANAGEMENT CONTROL & AUDIT -->
-<div id="managerView" class="container view-panel">
-    <div class="nav-header">
-        <div>
-            <strong>Operational Audit Command</strong>
-            <div style="font-size:12px; color:#64748b;">Higher Authority Access Layer</div>
-        </div>
-        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Exit</button>
+    <!-- Attendance Action Bar -->
+    <div style="background:#f1f5f9; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <span id="attendanceStatus" style="font-size:13px; font-weight:bold;">Status: Off-Duty</span>
+        <button id="punchInBtn" onclick="executePunchIn()" class="btn btn-success" style="padding:6px 12px; font-size:13px;">Punch In</button>
     </div>
 
     <div class="tab-menu">
-        <span class="tab-link active" id="tabLedgerBtn" onclick="switchMgrTab('ledger')">Performance Ledger</span>
-        <span class="tab-link" id="tabRegBtn" onclick="switchMgrTab('registry')">Manage Workspace Registry</span>
+        <span class="tab-link active" id="tabWorkBtn" onclick="switchWorkerTab('work')">Active Shift Duties</span>
+        <span class="tab-link" id="tabChatBtn" onclick="switchWorkerTab('chat')">Communications Network</span>
+    </div>
+
+    <!-- WORK TAB -->
+    <div id="workerTabWork" class="sub-section active">
+        <!-- Outbound Transfer Area -->
+        <div id="outboundTransferPanel" style="display:none; margin-top:10px;">
+            <h3>📝 Create Urgent / Pending Handoff Queue</h3>
+            <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border);">
+                <div class="form-group">
+                    <label>Duty Description:</label>
+                    <input type="text" id="taskDesc" class="form-control" placeholder="Identify problem or duty breakdown">
+                </div>
+                <div class="task-input-row">
+                    <div style="flex:1;">
+                        <select id="taskType" class="form-control">
+                            <option value="Urgent">Urgent / Pending</option>
+                            <option value="Half-Done">Half-Done Task</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;" id="pctWrapper">
+                        <input type="number" id="taskPct" class="form-control" placeholder="Completion %" min="1" max="99" value="50">
+                    </div>
+                </div>
+                <button onclick="addTask()" class="btn btn-primary" style="width:100%; padding:8px;">+ Bind to Handoff Pipeline</button>
+            </div>
+
+            <div style="margin-top:15px;">
+                <strong>Active Handoff Items List:</strong>
+                <div id="liveHandoverContainer" style="margin-top:8px;"></div>
+            </div>
+
+            <div id="outboundGatekeeper" class="gatekeeper-box">
+                <strong id="gkTitle" style="color:var(--danger)">🔒 Punch-Out Locked</strong>
+                <p id="gkMsg" style="margin:4px 0 0 0; color:#475569;">You must document at least 1 Urgent duty and 1 Half-Done duty before terminal clearance.</p>
+            </div>
+
+            <button id="punchOutBtn" class="btn btn-secondary" style="width:100%; margin-top:15px; cursor:not-allowed;" disabled onclick="executePunchOut()">PUNCH OUT & RESOLVE SHIFT</button>
+        </div>
+
+        <!-- Inbound Handoff Process Area -->
+        <div id="inboundProcessPanel" style="display:none; margin-top:10px;">
+            <h3>📥 Process Inbound Route Handoffs</h3>
+            <div id="inboundTasksContainer"></div>
+            <button onclick="executePunchInSignOff()" class="btn btn-success" style="width:100%; margin-top:15px;">COMMIT COMPLETED CHECKLIST VALUES</button>
+        </div>
+    </div>
+
+    <!-- CHAT TAB -->
+    <div id="workerTabChat" class="sub-section">
+        <h3>💬 Operational Communications</h3>
+        <div class="form-group">
+            <label>Select Channel Context:</label>
+            <select id="chatChannelSelect" class="form-control" onchange="loadChatFeed()">
+                <option value="dept">My Department Chat Room</option>
+                <option value="dm">Private DM Matrix</option>
+            </select>
+        </div>
+        <div id="chatBox" class="chat-container"></div>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="chatMessageInput" class="form-control" placeholder="Type transmission payload...">
+            <button onclick="sendChatMessage()" class="btn btn-primary">Send</button>
+        </div>
+    </div>
+</div>
+
+<!-- VIEW 3: MANAGEMENT SYSTEMS ACCESS -->
+<div id="managerView" class="container view-panel">
+    <div class="nav-header">
+        <div>
+            <strong>Operations Command Center</strong>
+            <div style="font-size:12px; color:#64748b;">System Administrator Layer</div>
+        </div>
+        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Sign Out</button>
+    </div>
+
+    <div class="tab-menu">
+        <span class="tab-link active" id="tabLedgerBtn" onclick="switchMgrTab('ledger')">Accountability Ledger</span>
+        <span class="tab-link" id="tabRegBtn" onclick="switchMgrTab('registry')">Dynamic Workspace Configuration</span>
     </div>
 
     <!-- SUBSECTION A: PERFORMANCE LEDGER -->
-    <div id="mgrSectionLedger" class="mgr-section active">
+    <div id="mgrSectionLedger" class="sub-section active">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3>📊 Employee Scorecards</h3>
+            <h3>📊 Live Employee Scorecards</h3>
             <button onclick="exportMetricsCSV()" class="btn btn-success" style="padding:6px 12px; font-size:12px;">📥 Export CSV Report</button>
         </div>
         <div id="managerMetricsFeed"></div>
-        <button onclick="resetSystemDatabase()" class="btn btn-danger" style="width:100%; margin-top:10px; font-size:12px; opacity:0.7;">⚠️ Master Reset Database Ledger</button>
+        <button onclick="resetSystemDatabase()" class="btn btn-danger" style="width:100%; margin-top:10px; font-size:12px; opacity:0.7;">⚠️ Factory Hard Reset</button>
     </div>
 
-    <!-- SUBSECTION B: REGISTRY MANAGER -->
-    <div id="mgrSectionRegistry" class="mgr-section">
-        <h3>🛠️ Register New Employee Profile</h3>
+    <!-- SUBSECTION B: REGISTRY MANAGER (DYNAMIC SHIFTS & DEPTS) -->
+    <div id="mgrSectionRegistry" class="sub-section">
+        <h3>🛠️ Register/Modify Worker Profiles</h3>
         <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:15px;">
             <div class="form-group">
                 <label>Unique Worker ID:</label>
-                <input type="text" id="newEmpId" class="form-control" placeholder="e.g., EMP103">
+                <input type="text" id="newEmpId" class="form-control" placeholder="EMP103">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="newEmpPass" class="form-control" placeholder="Set password">
             </div>
             <div class="form-group">
                 <label>Full Name:</label>
-                <input type="text" id="newEmpName" class="form-control" placeholder="e.g., Charles">
+                <input type="text" id="newEmpName" class="form-control" placeholder="Charles">
             </div>
             <div class="form-group">
-                <label>Department Placement:</label>
-                <input type="text" id="newEmpDept" class="form-control" placeholder="e.g., Quality Control">
+                <label>Department:</label>
+                <select id="newEmpDept" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>Operational Shift Assignment:</label>
+                <select id="newEmpShift" class="form-control"></select>
             </div>
             <div class="form-group">
                 <label>Functional Role / Title:</label>
-                <input type="text" id="newEmpRole" class="form-control" placeholder="e.g., Inspector">
+                <input type="text" id="newEmpRole" class="form-control" placeholder="CNC Supervisor">
             </div>
             <div class="form-group">
-                <label>Shift Operations Alignment:</label>
+                <label>Shift Alignment Flow:</label>
                 <select id="newEmpType" class="form-control">
                     <option value="outbound">Outbound Shift Worker</option>
                     <option value="inbound">Inbound Shift Worker</option>
                 </select>
             </div>
-            <button onclick="registerNewEmployee()" class="btn btn-primary" style="width:100%;">Save to Active Registry</button>
+            <button onclick="registerOrUpdateEmployee()" class="btn btn-primary" style="width:100%;">Save/Modify Worker Config</button>
+        </div>
+
+        <h3>🏢 Dynamic Department & Shift Controls</h3>
+        <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border);">
+            <div class="form-group">
+                <label>Add New Department Name:</label>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="newDeptName" class="form-control" placeholder="e.g., Quality Control">
+                    <button onclick="addNewDepartment()" class="btn btn-success">Add</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Create Custom Operational Shift:</label>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="newShiftName" class="form-control" placeholder="e.g., Night Shift (10PM-6AM)">
+                    <button onclick="addNewShift()" class="btn btn-success">Create</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+    // System Data Architecture Structures
     let systemUsers = JSON.parse(localStorage.getItem('sys_users')) || {
-        "EMP101": { name: "Alex", role: "Machinist", dept: "Production", type: "outbound" },
-        "EMP102": { name: "Bharath", role: "Specialist Inbound", dept: "Production", type: "inbound" },
-        "MGR001": { name: "Director Alpha", role: "Operations Manager", dept: "Management", type: "manager" }
+        "EMP101": { name: "Alex", pass: "123", role: "Machinist", dept: "Production", shift: "Day Shift (6AM-2PM)", type: "outbound" },
+        "EMP102": { name: "Bharath", pass: "123", role: "Specialist Inbound", dept: "Production", shift: "Evening Shift (2PM-10PM)", type: "inbound" },
+        "MGR001": { name: "Director Alpha", pass: "admin", role: "Operations Manager", dept: "Management", shift: "Full-Time", type: "manager" }
     };
+
+    let globalDepts = JSON.parse(localStorage.getItem('sys_depts')) || ["Production", "Inventory", "Logistics"];
+    let globalShifts = JSON.parse(localStorage.getItem('sys_shifts')) || ["Day Shift (6AM-2PM)", "Evening Shift (2PM-10PM)", "Night Shift (10PM-6AM)"];
+    let globalChats = JSON.parse(localStorage.getItem('sys_chats')) || [];
 
     let activeUser = null;
     let temporaryHandoverList = [];
+    let isPunchedIn = false;
 
     if (!localStorage.getItem('sys_pipeline')) localStorage.setItem('sys_pipeline', JSON.stringify([]));
     if (!localStorage.getItem('sys_metrics')) {
         localStorage.setItem('sys_metrics', JSON.stringify({ "EMP101": [], "EMP102": [] }));
     }
-    saveUsersToStorage();
-    populateGatewaySelector();
+    
+    saveCoreStructureToStorage();
+    updateDropdownMenus();
 
     document.getElementById('taskType').addEventListener('change', function() {
         document.getElementById('pctWrapper').style.visibility = (this.value === 'Half-Done') ? 'visible' : 'hidden';
     });
 
-    function saveUsersToStorage() {
+    function saveCoreStructureToStorage() {
         localStorage.setItem('sys_users', JSON.stringify(systemUsers));
+        localStorage.setItem('sys_depts', JSON.stringify(globalDepts));
+        localStorage.setItem('sys_shifts', JSON.stringify(globalShifts));
+        localStorage.setItem('sys_chats', JSON.stringify(globalChats));
     }
 
-    function populateGatewaySelector() {
-        const select = document.getElementById('userSelect');
-        select.innerHTML = '';
-        Object.keys(systemUsers).forEach(id => {
-            const u = systemUsers[id];
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.innerText = `${u.name} (${u.dept} - ${u.role})`;
-            select.appendChild(opt);
-        });
+    function updateDropdownMenus() {
+        const deptSelect = document.getElementById('newEmpDept');
+        deptSelect.innerHTML = '';
+        globalDepts.forEach(d => deptSelect.innerHTML += `<option value="${d}">${d}</option>`);
+
+        const shiftSelect = document.getElementById('newEmpShift');
+        shiftSelect.innerHTML = '';
+        globalShifts.forEach(s => shiftSelect.innerHTML += `<option value="${s}">${s}</option>`);
     }
 
     function login() {
-        const id = document.getElementById('userSelect').value;
+        const id = document.getElementById('loginId').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+
+        if (!systemUsers[id] || systemUsers[id].pass !== pass) {
+            alert("Invalid Security Credentials.");
+            return;
+        }
+
         activeUser = { id: id, ...systemUsers[id] };
         document.getElementById('authView').classList.remove('active');
-        
-        if (activeUser.type === 'outbound') {
-            document.getElementById('outboundView').classList.add('active');
-            document.getElementById('outboundName').innerText = `Op: ${activeUser.name} (${activeUser.id})`;
-            document.getElementById('outboundDept').innerText = `Dept: ${activeUser.dept} | ${activeUser.role}`;
-            temporaryHandoverList = [];
-            renderOutboundLiveStream();
-        } else if (activeUser.type === 'inbound') {
-            document.getElementById('inboundView').classList.add('active');
-            document.getElementById('inboundName').innerText = `Op: ${activeUser.name} (${activeUser.id})`;
-            renderInboundQueue();
-        } else if (activeUser.type === 'manager') {
+        document.getElementById('loginId').value = '';
+        document.getElementById('loginPass').value = '';
+
+        if (activeUser.type === 'manager') {
             document.getElementById('managerView').classList.add('active');
-            renderManagerDashboard();
+            switchMgrTab('ledger');
+        } else {
+            document.getElementById('workerDashboardView').classList.add('active');
+            document.getElementById('wkDispName').innerText = `${activeUser.name} (${activeUser.id})`;
+            document.getElementById('wkDispMeta').innerText = `${activeUser.dept} • ${activeUser.role} • ${activeUser.shift}`;
+            isPunchedIn = false;
+            updateAttendanceUI();
+            switchWorkerTab('work');
         }
     }
 
@@ -305,12 +379,70 @@
         activeUser = null;
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('authView').classList.add('active');
-        populateGatewaySelector();
+    }
+
+    function executePunchIn() {
+        isPunchedIn = true;
+        updateAttendanceUI();
+        
+        // Log clean raw system punch-in timestamp directly into profile history metrics
+        const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
+        if(!metrics[activeUser.id]) metrics[activeUser.id] = [];
+        metrics[activeUser.id].push({
+            task: "Shift Node Punch-In",
+            completion: 100,
+            context: `Timestamp: ${new Date().toLocaleTimeString()}`
+        });
+        localStorage.setItem('sys_metrics', JSON.stringify(metrics));
+
+        if (activeUser.type === 'outbound') {
+            document.getElementById('outboundTransferPanel').style.display = 'block';
+            document.getElementById('inboundProcessPanel').style.display = 'none';
+            temporaryHandoverList = [];
+            renderOutboundLiveStream();
+        } else {
+            document.getElementById('outboundTransferPanel').style.display = 'none';
+            document.getElementById('inboundProcessPanel').style.display = 'block';
+            renderInboundQueue();
+        }
+    }
+
+    function updateAttendanceUI() {
+        const btn = document.getElementById('punchInBtn');
+        const status = document.getElementById('attendanceStatus');
+        if (isPunchedIn) {
+            status.innerText = "Status: ACTIVE ON-DUTY";
+            btn.style.display = 'none';
+        } else {
+            status.innerText = "Status: Off-Duty";
+            btn.style.display = 'block';
+            document.getElementById('outboundTransferPanel').style.display = 'none';
+            document.getElementById('inboundProcessPanel').style.display = 'none';
+        }
+    }
+
+    function switchWorkerTab(tab) {
+        document.getElementById('tabWorkBtn').classList.remove('active');
+        document.getElementById('tabChatBtn').classList.remove('active');
+        document.getElementById('workerTabWork').classList.remove('active');
+        document.getElementById('workerTabChat').classList.remove('active');
+
+        if(tab === 'work') {
+            document.getElementById('tabWorkBtn').classList.add('active');
+            document.getElementById('workerTabWork').classList.add('active');
+        } else {
+            document.getElementById('tabChatBtn').classList.add('active');
+            document.getElementById('workerTabChat').classList.add('active');
+            loadChatFeed();
+        }
     }
 
     function switchMgrTab(tab) {
-        document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.mgr-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('tabLedgerBtn').classList.remove('active');
+        document.getElementById('tabRegBtn').classList.remove('active');
+        document.getElementById('mgrSectionLedger').classList.remove('active');
+        document.getElementById('mgrSectionRegistry').classList.remove('active');
+
         if(tab === 'ledger') {
             document.getElementById('tabLedgerBtn').classList.add('active');
             document.getElementById('mgrSectionLedger').classList.add('active');
@@ -318,39 +450,65 @@
         } else {
             document.getElementById('tabRegBtn').classList.add('active');
             document.getElementById('mgrSectionRegistry').classList.add('active');
+            updateDropdownMenus();
         }
     }
 
-    function registerNewEmployee() {
+    // Dynamic Org Management Logic
+    function addNewDepartment() {
+        const name = document.getElementById('newDeptName').value.trim();
+        if(!name) return;
+        if(globalDepts.includes(name)) { alert("Dept exists."); return; }
+        globalDepts.push(name);
+        saveCoreStructureToStorage();
+        updateDropdownMenus();
+        document.getElementById('newDeptName').value = '';
+        alert(`Department "${name}" generated.`);
+    }
+
+    function addNewShift() {
+        const name = document.getElementById('newShiftName').value.trim();
+        if(!name) return;
+        if(globalShifts.includes(name)) { alert("Shift architecture exists."); return; }
+        globalShifts.push(name);
+        saveCoreStructureToStorage();
+        updateDropdownMenus();
+        document.getElementById('newShiftName').value = '';
+        alert(`Shift configuration "${name}" created.`);
+    }
+
+    function registerOrUpdateEmployee() {
         const id = document.getElementById('newEmpId').value.trim();
+        const pass = document.getElementById('newEmpPass').value.trim();
         const name = document.getElementById('newEmpName').value.trim();
-        const dept = document.getElementById('newEmpDept').value.trim();
+        const dept = document.getElementById('newEmpDept').value;
+        const shift = document.getElementById('newEmpShift').value;
         const role = document.getElementById('newEmpRole').value.trim();
         const type = document.getElementById('newEmpType').value;
 
-        if(!id || !name || !dept || !role) { alert("Complete all profile fields."); return; }
-        if(systemUsers[id]) { alert("ID registration conflict."); return; }
+        if(!id || !pass || !name || !role) { alert("Fill all tracking parameters."); return; }
 
-        systemUsers[id] = { name: name, role: role, dept: dept, type: type };
-        saveUsersToStorage();
+        systemUsers[id] = { name: name, pass: pass, role: role, dept: dept, shift: shift, type: type };
+        saveCoreStructureToStorage();
 
         const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
         if(!metrics[id]) metrics[id] = [];
         localStorage.setItem('sys_metrics', JSON.stringify(metrics));
 
-        alert(`Worker Profile registered successfully for ${name}!`);
+        alert(`Worker configuration for ID ${id} compiled securely.`);
         document.getElementById('newEmpId').value = '';
+        document.getElementById('newEmpPass').value = '';
         document.getElementById('newEmpName').value = '';
-        document.getElementById('newEmpDept').value = '';
         document.getElementById('newEmpRole').value = '';
     }
 
+    // Task Allocation & Handoff Checklist Logic
     function addTask() {
         const desc = document.getElementById('taskDesc').value.trim();
         const type = document.getElementById('taskType').value;
         let pct = parseInt(document.getElementById('taskPct').value) || 50;
 
-        if (!desc) { alert("Please type a description."); return; }
+        if (!desc) { alert("Specify active task context."); return; }
         if (type === 'Urgent') pct = 0;
 
         temporaryHandoverList.push({ desc: desc, type: type, originalPct: pct, updatedPct: pct });
@@ -366,15 +524,12 @@
     function renderOutboundLiveStream() {
         const container = document.getElementById('liveHandoverContainer');
         container.innerHTML = '';
-        if(temporaryHandoverList.length === 0) {
-            container.innerHTML = '<p style="color:#64748b; font-size:13px; text-align:center;">Queue empty.</p>';
-        }
         temporaryHandoverList.forEach((t, i) => {
             const div = document.createElement('div');
             div.className = 'added-task-item';
             const labelStr = t.type === 'Urgent' ? 'URGENT' : `HALF-DONE (${t.originalPct}%)`;
             const classStr = t.type === 'Urgent' ? 'pill-urgent' : 'pill-half';
-            div.innerHTML = `<div><span class="status-pill ${classStr}">${labelStr}</span><span style="font-size:14px; margin-left:6px; font-weight:500;">${t.desc}</span></div><button onclick="removeTask(${i})" class="btn btn-danger" style="padding:2px 8px; font-size:11px;">Remove</button>`;
+            div.innerHTML = `<div><span class="status-pill ${classStr}">${labelStr}</span><span style="font-size:14px; margin-left:6px; font-weight:500;">${t.desc}</span></div><button onclick="removeTask(${i})" class="btn btn-danger" style="padding:2px 8px; font-size:11px;">Cancel</button>`;
             container.appendChild(div);
         });
         evaluateOutboundGatekeeper();
@@ -390,17 +545,17 @@
 
         if (hasUrgent && hasHalf) {
             gkBox.className = "gatekeeper-box passed";
-            gkTitle.innerHTML = "✅ Gatekeeper Status Passed";
+            gkTitle.innerHTML = "✅ Verification Status Ready";
             gkTitle.style.color = "var(--success)";
-            gkMsg.innerText = "Mandatory handoff parameters verified.";
+            gkMsg.innerText = "Required handoff dataset structural parameters validated.";
             punchBtn.disabled = false;
             punchBtn.className = "btn btn-success";
             punchBtn.style.cursor = "pointer";
         } else {
             gkBox.className = "gatekeeper-box";
-            gkTitle.innerHTML = "🔒 Handover Pipeline Locked";
+            gkTitle.innerHTML = "🔒 Punch-Out Locked";
             gkTitle.style.color = "var(--danger)";
-            gkMsg.innerText = "You must log at least 1 Urgent task AND 1 Half-Done task.";
+            gkMsg.innerText = "You must log at least 1 Urgent task AND 1 Half-Done task to unlock punch-out.";
             punchBtn.disabled = true;
             punchBtn.className = "btn btn-secondary";
             punchBtn.style.cursor = "not-allowed";
@@ -412,6 +567,7 @@
         pipeline.push({
             senderId: activeUser.id,
             senderName: activeUser.name,
+            dept: activeUser.dept,
             timestamp: new Date().toLocaleTimeString(),
             tasks: temporaryHandoverList
         });
@@ -422,11 +578,12 @@
             metrics[activeUser.id].push({
                 task: t.desc,
                 completion: t.type === 'Urgent' ? 0 : t.originalPct,
-                context: "Logged at Hand-off"
+                context: `Shift Left Logged: Punch-Out ${new Date().toLocaleTimeString()}`
             });
         });
         localStorage.setItem('sys_metrics', JSON.stringify(metrics));
-        alert("Transmission locked into incoming channel.");
+        alert("Verification logged. Hand-off locked to corresponding incoming workforce element.");
+        isPunchedIn = false;
         logout();
     }
 
@@ -435,31 +592,35 @@
         container.innerHTML = '';
         const pipeline = JSON.parse(localStorage.getItem('sys_pipeline')) || [];
 
-        if (pipeline.length === 0) {
-            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:20px;">No incoming packages routed to this node.</p>';
+        // Pull corresponding task payload matching active logged department array metrics
+        const relevantPackages = pipeline.filter(p => p.dept === activeUser.dept);
+
+        if (relevantPackages.length === 0) {
+            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:20px;">No pending operations channel packages directed to your department node.</p>';
             return;
         }
 
-        const packagePack = pipeline[pipeline.length - 1];
+        const packagePack = relevantPackages[relevantPackages.length - 1];
         const headerInfo = document.createElement('div');
         headerInfo.style = "background:#f1f5f9; padding:8px; border-radius:6px; margin-bottom:12px; font-size:13px;";
-        headerInfo.innerHTML = `📡 <strong>Incoming Hand-off Source:</strong> ${packagePack.senderName} at ${packagePack.timestamp}`;
+        headerInfo.innerHTML = `📡 <strong>Inbound Target Stream:</strong> ${packagePack.senderName} (${packagePack.senderId}) at ${packagePack.timestamp}`;
         container.appendChild(headerInfo);
 
         packagePack.tasks.forEach((t, index) => {
             const card = document.createElement('div');
             card.className = 'work-card';
-            const initialStatusText = t.type === 'Urgent' ? '🔥 Urgent Initial State (0%)' : `⚠️ Handed over at ${t.originalPct}%`;
-            card.innerHTML = `<div style="font-weight:bold; margin-bottom:6px; font-size:15px;">Task: ${t.desc}</div><div style="font-size:12px; color:#64748b; margin-bottom:8px;">${initialStatusText}</div><div class="form-group" style="margin-bottom:0;"><label style="font-size:12px; color:#475569;">Log Current Completion Outcome (%):</label><input type="number" class="form-control inbound-metric-input" data-index="${index}" min="0" max="100" value="100" style="padding:6px;"></div>`;
+            const initialStatusText = t.type === 'Urgent' ? '🔥 Urgent Target (0%)' : `⚠️ Handed over at ${t.originalPct}%`;
+            card.innerHTML = `<div style="font-weight:bold; margin-bottom:6px; font-size:15px;">Task: ${t.desc}</div><div style="font-size:12px; color:#64748b; margin-bottom:8px;">${initialStatusText}</div><div class="form-group" style="margin-bottom:0;"><label style="font-size:12px; color:#475569;">Execute Completion Percent Update (%):</label><input type="number" class="form-control inbound-metric-input" data-index="${index}" min="0" max="100" value="100" style="padding:6px;"></div>`;
             container.appendChild(card);
         });
     }
 
     function executePunchInSignOff() {
         const pipeline = JSON.parse(localStorage.getItem('sys_pipeline')) || [];
-        if (pipeline.length === 0) return;
+        const relevantIndex = pipeline.findIndex(p => p.dept === activeUser.dept);
+        if (relevantIndex === -1) return;
 
-        const packagePack = pipeline[pipeline.length - 1];
+        const packagePack = pipeline[relevantIndex];
         const inputs = document.querySelectorAll('.inbound-metric-input');
         const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
 
@@ -471,50 +632,78 @@
             metrics[activeUser.id].push({
                 task: targetedTask.desc,
                 completion: loggedVal,
-                context: "Resolved Post-Handover"
+                context: `Shift Resolution Sign-off`
             });
         });
 
-        pipeline.pop();
+        pipeline.splice(relevantIndex, 1);
         localStorage.setItem('sys_pipeline', JSON.stringify(pipeline));
         localStorage.setItem('sys_metrics', JSON.stringify(metrics));
-        alert("Metrics logged successfully to dataset.");
+        alert("Performance datasets processed.");
+        isPunchedIn = false;
         logout();
     }
 
+    // Built-in Live Chat Engine Logic
+    function loadChatFeed() {
+        const type = document.getElementById('chatChannelSelect').value;
+        const box = document.getElementById('chatBox');
+        box.innerHTML = '';
+        
+        globalChats.forEach(c => {
+            if (type === 'dept' && c.channel !== activeUser.dept) return;
+            if (type === 'dm' && c.channel !== 'DM') return;
+
+            const div = document.createElement('div');
+            const isMe = c.senderId === activeUser.id;
+            div.className = `chat-bubble ${isMe ? 'me' : ''}`;
+            div.innerHTML = `<div class="chat-meta">${c.senderName} (${c.time})</div><div>${c.text}</div>`;
+            box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function sendChatMessage() {
+        const input = document.getElementById('chatMessageInput');
+        const msgText = input.value.trim();
+        if(!msgText) return;
+
+        const type = document.getElementById('chatChannelSelect').value;
+        const channelIdentifier = (type === 'dept') ? activeUser.dept : 'DM';
+
+        globalChats.push({
+            channel: channelIdentifier,
+            senderId: activeUser.id,
+            senderName: activeUser.name,
+            text: msgText,
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        });
+
+        saveCoreStructureToStorage();
+        input.value = '';
+        loadChatFeed();
+    }
+
+    // Manager Dashboard Visualization
     function renderManagerDashboard() {
         const container = document.getElementById('managerMetricsFeed');
         container.innerHTML = '';
         const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
 
-        Object.keys(metrics).forEach(empId => {
-            if (!systemUsers[empId]) return;
+        Object.keys(systemUsers).forEach(empId => {
+            if (systemUsers[empId].type === 'manager') return;
             const profile = systemUsers[empId];
-            const records = metrics[empId];
+            const records = metrics[empId] || [];
 
             let totalCompletion = 0;
             let recordLinesHTML = '';
             
-            if(records.length === 0) {
-                recordLinesHTML = '<div style="font-size:12px; color:#94a3b8; margin-top:6px;">No documented metrics inputs.</div>';
-            } else {
-                records.forEach(r => {
-                    totalCompletion += r.completion;
-                    recordLinesHTML += `<div class="metric-row"><span style="color:#475569;">• ${r.task} <small style="color:#94a3b8">(${r.context})</small></span><span style="font-weight:bold; color:var(--primary);">${r.completion}%</span></div>`;
-                });
-            }
+            records.forEach(r => {
+                totalCompletion += r.completion;
+                recordLinesHTML += `<div class="metric-row"><span style="color:#475569;">• ${r.task} <small style="color:#94a3b8">(${r.context})</small></span><span style="font-weight:bold; color:var(--primary);">${r.completion}%</span></div>`;
+            });
 
-            const avgEfficiency = records.length > 0 ? Math.round(totalCompletion / records.length) : null;
-            let scoreBadgeClass = 'score-low';
-            let ratingLabel = 'Low Output';
-
-            if(avgEfficiency !== null) {
-                if(avgEfficiency >= 80) { scoreBadgeClass = 'score-high'; ratingLabel = 'Highly Efficient'; }
-                else if(avgEfficiency >= 50) { scoreBadgeClass = 'score-med'; ratingLabel = 'Average Output'; }
-            } else {
-                ratingLabel = 'No Data';
-                scoreBadgeClass = 'score-med';
-            }
+            const avgEfficiency = records.length > 0 ? Math.round(totalCompletion / records.length) : 0;
 
             const pCard = document.createElement('div');
             pCard.className = 'profile-card';
@@ -522,47 +711,43 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
                     <div>
                         <strong style="font-size:15px; color:#0f172a;">${profile.name} (ID: ${empId})</strong>
-                        <div style="font-size:11px; color:#64748b;">${profile.dept} • ${profile.role}</div>
+                        <div style="font-size:11px; color:#64748b;">${profile.dept} • ${profile.role} • <em>${profile.shift}</em></div>
                     </div>
-                    <div class="score-badge ${scoreBadgeClass}">
-                        ${avgEfficiency !== null ? avgEfficiency + '% ' : ''}[${ratingLabel}]
+                    <div style="background:#dcfce7; color:var(--success); padding: 4px 8px; border-radius:6px; font-weight:bold; font-size:13px;">
+                        Avg Efficiency: ${avgEfficiency}%
                     </div>
                 </div>
                 <div style="margin-top:10px;">
-                    <span style="font-size:12px; font-weight:bold; color:#64748b;">Performance Ledger Breakdown:</span>
-                    ${recordLinesHTML}
+                    <span style="font-size:12px; font-weight:bold; color:#64748b;">System Performance Profile Output:</span>
+                    ${records.length === 0 ? '<div style="font-size:12px; color:#94a3b8; margin-top:6px;">No recorded data loops.</div>' : recordLinesHTML}
                 </div>
             `;
             container.appendChild(pCard);
         });
     }
 
-    // CSV Audit Reporting Engine
     function exportMetricsCSV() {
         const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
-        if (Object.keys(metrics).length === 0) { alert("No metrics data currently available to export."); return; }
-
-        let csvContent = "data:text/csv;charset=utf-8,Worker ID,Name,Department,Role,Task Description,Completion Output,Context\n";
+        let csvContent = "data:text/csv;charset=utf-8,Worker ID,Name,Department,Shift,Role,Task Metric,Output Value,Context\n";
 
         Object.keys(metrics).forEach(empId => {
-            const profile = systemUsers[empId] || { name: "Unknown", dept: "N/A", role: "N/A" };
+            const profile = systemUsers[empId] || { name: "N/A", dept: "N/A", shift: "N/A", role: "N/A" };
             metrics[empId].forEach(r => {
-                let safeTask = r.task.replace(/"/g, '""'); // Escape inner quotes
-                csvContent += `"${empId}","${profile.name}","${profile.dept}","${profile.role}","${safeTask}","${r.completion}%","${r.context}"\n`;
+                csvContent += `"${empId}","${profile.name}","${profile.dept}","${profile.shift}","${profile.role}","${r.task}","${r.completion}%","${r.context}"\n`;
             });
         });
 
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Workforce_Accountability_Report_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute("download", "Workforce_Accountability_Data.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     }
 
     function resetSystemDatabase() {
-        if (confirm("Are you sure you want to clear all operational ledger history and reset to factory defaults?")) {
+        if (confirm("Reset current localStorage data arrays back to clean standard initial models?")) {
             localStorage.clear();
             location.reload();
         }
