@@ -33,9 +33,11 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             padding: 20px;
             box-sizing: border-box;
+            margin-bottom: 20px;
         }
 
-        h2 { margin-top: 0; color: #1e293b; }
+        h2, h3 { margin-top: 0; color: #1e293b; }
+        h3 { margin-bottom: 12px; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;}
 
         .progress-container {
             background: #e2e8f0;
@@ -127,6 +129,28 @@
         }
         .badge-locked { background: #fee2e2; color: var(--danger); }
         .badge-ready { background: #dcfce7; color: var(--success); }
+
+        /* History Log Style */
+        .history-card {
+            background: #f1f5f9;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .history-time { font-weight: bold; color: #64748b; font-size: 12px; }
+        .history-notes { margin-top: 4px; font-style: italic; color: #334155; word-break: break-word;}
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+            float: right;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -169,8 +193,16 @@
         <textarea id="notes" placeholder="Describe outstanding exceptions, machine statuses, or alerts for the incoming shift..."></textarea>
     </div>
 
-    <!-- Punch Out Action Trigger -->
     <button id="punchBtn" class="punch-btn" disabled>PUNCH OUT</button>
+</div>
+
+<!-- Shift Handover Logs Feed -->
+<div class="app-container">
+    <button id="clearHistory" class="clear-btn">Clear Logs</button>
+    <h3>📋 Shift History Logs</h3>
+    <div id="historyFeed">
+        <p style="color: #64748b; font-size: 14px; text-align: center;" id="emptyMsg">No shift logs recorded yet.</p>
+    </div>
 </div>
 
 <script>
@@ -182,22 +214,46 @@
     const gatekeeperPanel = document.getElementById('gatekeeperPanel');
     const gatekeeperMessage = document.getElementById('gatekeeperMessage');
     const statusBadge = document.getElementById('statusBadge');
+    const historyFeed = document.getElementById('historyFeed');
+    const emptyMsg = document.getElementById('emptyMsg');
+    const clearHistoryBtn = document.getElementById('clearHistory');
 
+    // 1. Auto-Load Existing Drafts & History Data
+    function loadSavedData() {
+        // Load Draft State
+        checkboxes.forEach(cb => {
+            const savedState = localStorage.getItem(`draft_${cb.id}`);
+            if (savedState === 'true') cb.checked = true;
+        });
+        const savedNotes = localStorage.getItem('draft_notes');
+        if (savedNotes) notesInput.value = savedNotes;
+
+        // Render History Logs
+        renderHistory();
+        evaluateGatekeeper();
+    }
+
+    // 2. Save Current Draft Progress Live
+    function saveDraft() {
+        checkboxes.forEach(cb => {
+            localStorage.setItem(`draft_${cb.id}`, cb.checked);
+        });
+        localStorage.setItem('draft_notes', notesInput.value);
+    }
+
+    // 3. Core Gatekeeper Processing Logic
     function evaluateGatekeeper() {
         const total = checkboxes.length;
         const checked = document.querySelectorAll('.task-check:checked').length;
         const percentage = Math.round((checked / total) * 100);
 
-        // Update Progress UI
         progressBar.style.width = `${percentage}%`;
         progressText.innerText = `${percentage}%`;
 
-        // Gatekeeper logic checks
         const tasksComplete = (percentage === 100);
-        const notesFilled = (notesInput.value.trim().length > 10); // Enforce at least 10 meaningful characters
+        const notesFilled = (notesInput.value.trim().length > 10); 
 
         if (tasksComplete && notesFilled) {
-            // Unlock Gatekeeper
             punchBtn.disabled = false;
             punchBtn.classList.add('active');
             gatekeeperPanel.classList.add('passed');
@@ -206,14 +262,12 @@
             statusBadge.innerText = "🔓 READY TO PUNCH OUT";
             statusBadge.className = "status-badge badge-ready";
         } else {
-            // Lock Gatekeeper
             punchBtn.disabled = true;
             punchBtn.classList.remove('active');
             gatekeeperPanel.classList.remove('passed');
             statusBadge.innerText = "🔒 PUNCH-OUT LOCKED";
             statusBadge.className = "status-badge badge-locked";
             
-            // Contextual message
             if (!tasksComplete && !notesFilled) {
                 gatekeeperMessage.innerHTML = "⚠️ Requirements Not Met:";
             } else if (!tasksComplete) {
@@ -225,16 +279,81 @@
         }
     }
 
-    // Event Listeners for Live Validation
-    checkboxes.forEach(cb => cb.addEventListener('change', evaluateGatekeeper));
-    notesInput.addEventListener('input', evaluateGatekeeper);
+    // 4. Render logs array from LocalStorage to Screen UI
+    function renderHistory() {
+        const history = JSON.parse(localStorage.getItem('shift_history')) || [];
+        if (history.length === 0) {
+            emptyMsg.style.display = 'block';
+            historyFeed.querySelectorAll('.history-card').forEach(el => el.remove());
+            return;
+        }
+        
+        emptyMsg.style.display = 'none';
+        // Clean dynamic cards before rerendering
+        historyFeed.querySelectorAll('.history-card').forEach(el => el.remove());
 
-    punchBtn.addEventListener('click', () => {
-        alert('🎉 Shift Handover Successful! Punch-out recorded securely.');
+        // Display logs, newest first
+        history.reverse().forEach(log => {
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div class="history-time">📅 ${log.timestamp}</div>
+                <div>Status: <span style="color:var(--success); font-weight:bold;">Passed ✅</span></div>
+                <div class="history-notes"><strong>Notes:</strong> ${log.notes}</div>
+            `;
+            historyFeed.appendChild(card);
+        });
+    }
+
+    // Event Listeners for Live Updates
+    checkboxes.forEach(cb => cb.addEventListener('change', () => {
+        saveDraft();
+        evaluateGatekeeper();
+    }));
+    
+    notesInput.addEventListener('input', () => {
+        saveDraft();
+        evaluateGatekeeper();
     });
 
-    // Initial check on load
-    evaluateGatekeeper();
+    // 5. Commit Punch Out and Clear Draft Cache
+    punchBtn.addEventListener('click', () => {
+        const timestamp = new Date().toLocaleString();
+        const newLog = {
+            timestamp: timestamp,
+            notes: notesInput.value.trim()
+        };
+
+        // Save entry into history array
+        const history = JSON.parse(localStorage.getItem('shift_history')) || [];
+        history.push(newLog);
+        localStorage.setItem('shift_history', JSON.stringify(history));
+
+        // Clear draft cache inputs
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+            localStorage.removeItem(`draft_${cb.id}`);
+        });
+        notesInput.value = '';
+        localStorage.removeItem('draft_notes');
+
+        // Reset UI Status
+        evaluateGatekeeper();
+        renderHistory();
+
+        alert('🎉 Shift Handover Log Saved Successfully to local storage!');
+    });
+
+    // Clear whole local logs database
+    clearHistoryBtn.addEventListener('click', () => {
+        if(confirm("Are you sure you want to clear the entire handover log history?")) {
+            localStorage.removeItem('shift_history');
+            renderHistory();
+        }
+    });
+
+    // Initialize Application Lifecycle
+    loadSavedData();
 </script>
 
 </body>
