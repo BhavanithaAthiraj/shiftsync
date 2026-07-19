@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShiftSync Prototype</title>
+    <title>ShiftSync Enterprise</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -39,6 +39,26 @@
         h2, h3 { margin-top: 0; color: #1e293b; }
         h3 { margin-bottom: 12px; font-size: 18px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;}
 
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #475569;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            background-color: #fff;
+        }
+
         .progress-container {
             background: #e2e8f0;
             border-radius: 9999px;
@@ -46,6 +66,7 @@
             width: 100%;
             overflow: hidden;
             margin-bottom: 8px;
+            margin-top: 15px;
         }
 
         .progress-bar {
@@ -130,26 +151,41 @@
         .badge-locked { background: #fee2e2; color: var(--danger); }
         .badge-ready { background: #dcfce7; color: var(--success); }
 
-        /* History Log Style */
+        /* History Log Layout */
         .history-card {
             background: #f1f5f9;
             border-left: 4px solid var(--primary);
             padding: 12px;
             border-radius: 0 8px 8px 0;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-size: 14px;
         }
-        .history-time { font-weight: bold; color: #64748b; font-size: 12px; }
-        .history-notes { margin-top: 4px; font-style: italic; color: #334155; word-break: break-word;}
+        .history-time { font-weight: bold; color: #475569; font-size: 12px; margin-bottom: 4px;}
+        .history-meta { font-size: 13px; color: #334155; margin-bottom: 4px;}
+        .history-notes { margin-top: 6px; font-style: italic; color: #1e293b; word-break: break-word; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0;}
+        
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+        .export-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
         .clear-btn {
             background: none;
             border: none;
             color: var(--danger);
             font-size: 12px;
             cursor: pointer;
-            padding: 0;
-            float: right;
-            margin-top: 4px;
         }
     </style>
 </head>
@@ -160,12 +196,33 @@
     
     <div id="statusBadge" class="status-badge badge-locked">🔒 PUNCH-OUT LOCKED</div>
 
+    <!-- Metadata Context Fields -->
+    <div class="form-group">
+        <label for="operatorName">Operator Name *</label>
+        <input type="text" id="operatorName" class="form-control" placeholder="Enter your full name">
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+            <label for="shiftType">Shift *</label>
+            <select id="shiftType" class="form-control">
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+                <option value="Night">Night</option>
+            </select>
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label for="stationId">Station/Machine ID *</label>
+            <input type="text" id="stationId" class="form-control" placeholder="e.g. CNC-04">
+        </div>
+    </div>
+
     <!-- Progress Tracker -->
     <div>
-        <span style="font-weight: 600;">Shift Task Progress: <span id="progressText">0%</span></span>
         <div class="progress-container">
             <div id="progressBar" class="progress-bar"></div>
         </div>
+        <span style="font-size: 14px; font-weight: 600;">Task Verification Progress: <span id="progressText">0%</span></span>
     </div>
 
     <!-- Core Checklists -->
@@ -187,10 +244,10 @@
     <!-- Gatekeeper Engine UI -->
     <div id="gatekeeperPanel" class="gatekeeper-panel">
         <strong id="gatekeeperMessage" style="color: var(--danger);">⚠️ Requirements Not Met:</strong>
-        <p style="margin: 4px 0 12px 0; font-size: 14px; color: #64748b;">You must hit 100% completion and provide shift hand-off notes to punch out.</p>
+        <p style="margin: 4px 0 12px 0; font-size: 13px; color: #64748b;">Complete all metadata fields, hit 100% completion, and provide detailed notes to punch out.</p>
         
         <label for="notes" style="font-weight: 600; font-size: 14px;">Mandatory Hand-off Notes:</label>
-        <textarea id="notes" placeholder="Describe outstanding exceptions, machine statuses, or alerts for the incoming shift..."></textarea>
+        <textarea id="notes" placeholder="Describe outstanding exceptions, tool wear, or instructions for the next operator..."></textarea>
     </div>
 
     <button id="punchBtn" class="punch-btn" disabled>PUNCH OUT</button>
@@ -198,9 +255,14 @@
 
 <!-- Shift Handover Logs Feed -->
 <div class="app-container">
-    <button id="clearHistory" class="clear-btn">Clear Logs</button>
-    <h3>📋 Shift History Logs</h3>
-    <div id="historyFeed">
+    <div class="action-buttons">
+        <h3>📋 Shift History Logs</h3>
+        <div>
+            <button id="exportCsv" class="export-btn" style="display:none;">Export CSV</button>
+            <button id="clearHistory" class="clear-btn">Clear Logs</button>
+        </div>
+    </div>
+    <div id="historyFeed" style="margin-top: 10px;">
         <p style="color: #64748b; font-size: 14px; text-align: center;" id="emptyMsg">No shift logs recorded yet.</p>
     </div>
 </div>
@@ -209,6 +271,9 @@
     const checkboxes = document.querySelectorAll('.task-check');
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
+    const operatorInput = document.getElementById('operatorName');
+    const shiftSelect = document.getElementById('shiftType');
+    const stationInput = document.getElementById('stationId');
     const notesInput = document.getElementById('notes');
     const punchBtn = document.getElementById('punchBtn');
     const gatekeeperPanel = document.getElementById('gatekeeperPanel');
@@ -217,31 +282,37 @@
     const historyFeed = document.getElementById('historyFeed');
     const emptyMsg = document.getElementById('emptyMsg');
     const clearHistoryBtn = document.getElementById('clearHistory');
+    const exportCsvBtn = document.getElementById('exportCsv');
 
     // 1. Auto-Load Existing Drafts & History Data
     function loadSavedData() {
-        // Load Draft State
-        checkboxes.forEach(cb => {
-            const savedState = localStorage.getItem(`draft_${cb.id}`);
-            if (savedState === 'true') cb.checked = true;
-        });
-        const savedNotes = localStorage.getItem('draft_notes');
-        if (savedNotes) notesInput.value = savedNotes;
+        // Load Text & Selection Drafts
+        if (localStorage.getItem('draft_operator')) operatorInput.value = localStorage.getItem('draft_operator');
+        if (localStorage.getItem('draft_shift')) shiftSelect.value = localStorage.getItem('draft_shift');
+        if (localStorage.getItem('draft_station')) stationInput.value = localStorage.getItem('draft_station');
+        if (localStorage.getItem('draft_notes')) notesInput.value = localStorage.getItem('draft_notes');
 
-        // Render History Logs
+        // Load Checkbox Drafts
+        checkboxes.forEach(cb => {
+            if (localStorage.getItem(`draft_${cb.id}`) === 'true') cb.checked = true;
+        });
+
         renderHistory();
         evaluateGatekeeper();
     }
 
-    // 2. Save Current Draft Progress Live
+    // 2. Save Current Form Inputs to Cache
     function saveDraft() {
+        localStorage.setItem('draft_operator', operatorInput.value);
+        localStorage.setItem('draft_shift', shiftSelect.value);
+        localStorage.setItem('draft_station', stationInput.value);
+        localStorage.setItem('draft_notes', notesInput.value);
         checkboxes.forEach(cb => {
             localStorage.setItem(`draft_${cb.id}`, cb.checked);
         });
-        localStorage.setItem('draft_notes', notesInput.value);
     }
 
-    // 3. Core Gatekeeper Processing Logic
+    // 3. Upgraded Gatekeeper Processing Logic
     function evaluateGatekeeper() {
         const total = checkboxes.length;
         const checked = document.querySelectorAll('.task-check:checked').length;
@@ -250,10 +321,12 @@
         progressBar.style.width = `${percentage}%`;
         progressText.innerText = `${percentage}%`;
 
+        // Check validation boundaries
+        const metaValid = operatorInput.value.trim().length > 2 && stationInput.value.trim().length > 1;
         const tasksComplete = (percentage === 100);
         const notesFilled = (notesInput.value.trim().length > 10); 
 
-        if (tasksComplete && notesFilled) {
+        if (metaValid && tasksComplete && notesFilled) {
             punchBtn.disabled = false;
             punchBtn.classList.add('active');
             gatekeeperPanel.classList.add('passed');
@@ -268,83 +341,114 @@
             statusBadge.innerText = "🔒 PUNCH-OUT LOCKED";
             statusBadge.className = "status-badge badge-locked";
             
-            if (!tasksComplete && !notesFilled) {
-                gatekeeperMessage.innerHTML = "⚠️ Requirements Not Met:";
+            if (!metaValid) {
+                gatekeeperMessage.innerHTML = "⚠️ Fill out Operator & Station ID:";
             } else if (!tasksComplete) {
                 gatekeeperMessage.innerHTML = "⚠️ Tasks Incomplete (Must be 100%):";
             } else if (!notesFilled) {
-                gatekeeperMessage.innerHTML = "⚠️ Hand-off Notes Required:";
+                gatekeeperMessage.innerHTML = "⚠️ Detailed Hand-off Notes Required:";
             }
             gatekeeperMessage.style.color = "var(--danger)";
         }
     }
 
-    // 4. Render logs array from LocalStorage to Screen UI
+    // 4. Render Logs from LocalStorage
     function renderHistory() {
         const history = JSON.parse(localStorage.getItem('shift_history')) || [];
+        
         if (history.length === 0) {
             emptyMsg.style.display = 'block';
+            exportCsvBtn.style.display = 'none';
             historyFeed.querySelectorAll('.history-card').forEach(el => el.remove());
             return;
         }
         
         emptyMsg.style.display = 'none';
-        // Clean dynamic cards before rerendering
+        exportCsvBtn.style.display = 'inline-block';
         historyFeed.querySelectorAll('.history-card').forEach(el => el.remove());
 
         // Display logs, newest first
-        history.reverse().forEach(log => {
+        [...history].reverse().forEach(log => {
             const card = document.createElement('div');
             card.className = 'history-card';
             card.innerHTML = `
                 <div class="history-time">📅 ${log.timestamp}</div>
-                <div>Status: <span style="color:var(--success); font-weight:bold;">Passed ✅</span></div>
-                <div class="history-notes"><strong>Notes:</strong> ${log.notes}</div>
+                <div class="history-meta">
+                    <strong>Op:</strong> ${log.operator} | 
+                    <strong>Shift:</strong> ${log.shift} | 
+                    <strong>Station:</strong> ${log.station}
+                </div>
+                <div class="history-notes"><strong>Handover Notes:</strong> ${log.notes}</div>
             `;
             historyFeed.appendChild(card);
         });
     }
 
-    // Event Listeners for Live Updates
-    checkboxes.forEach(cb => cb.addEventListener('change', () => {
-        saveDraft();
-        evaluateGatekeeper();
-    }));
-    
-    notesInput.addEventListener('input', () => {
-        saveDraft();
-        evaluateGatekeeper();
-    });
+    // 5. Export Logs to Downloadable CSV File
+    function exportToCSV() {
+        const history = JSON.parse(localStorage.getItem('shift_history')) || [];
+        if (history.length === 0) return;
 
-    // 5. Commit Punch Out and Clear Draft Cache
+        // Establish CSV headers
+        let csvContent = "data:text/csv;charset=utf-8,Timestamp,Operator,Shift,Station ID,Handover Notes\n";
+
+        // Build records escape quotes to prevent format breaks
+        history.forEach(log => {
+            const cleanNotes = log.notes.replace(/"/g, '""');
+            const cleanOp = log.operator.replace(/"/g, '""');
+            const cleanStation = log.station.replace(/"/g, '""');
+            csvContent += `"${log.timestamp}","${cleanOp}","${log.shift}","${cleanStation}","${cleanNotes}"\n`;
+        });
+
+        // Trigger dynamic system browser download
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `ShiftSync_Logs_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Event Listeners for Live Processing
+    [operatorInput, shiftSelect, stationInput, notesInput].forEach(element => {
+        element.addEventListener('input', () => { saveDraft(); evaluateGatekeeper(); });
+        element.addEventListener('change', () => { saveDraft(); evaluateGatekeeper(); });
+    });
+    checkboxes.forEach(cb => cb.addEventListener('change', () => { saveDraft(); evaluateGatekeeper(); }));
+
+    // 6. Commit Punch Out and Wipe Active Cache
     punchBtn.addEventListener('click', () => {
         const timestamp = new Date().toLocaleString();
         const newLog = {
             timestamp: timestamp,
+            operator: operatorInput.value.trim(),
+            shift: shiftSelect.value,
+            station: stationInput.value.trim(),
             notes: notesInput.value.trim()
         };
 
-        // Save entry into history array
         const history = JSON.parse(localStorage.getItem('shift_history')) || [];
         history.push(newLog);
         localStorage.setItem('shift_history', JSON.stringify(history));
 
-        // Clear draft cache inputs
+        // Wipe only operational inputs (leave operator profile intact as convenience)
+        notesInput.value = '';
+        stationInput.value = '';
         checkboxes.forEach(cb => {
             cb.checked = false;
             localStorage.removeItem(`draft_${cb.id}`);
         });
-        notesInput.value = '';
         localStorage.removeItem('draft_notes');
+        localStorage.removeItem('draft_station');
 
-        // Reset UI Status
+        saveDraft();
         evaluateGatekeeper();
         renderHistory();
 
-        alert('🎉 Shift Handover Log Saved Successfully to local storage!');
+        alert('🎉 Shift Handover recorded! Logs updated successfully.');
     });
 
-    // Clear whole local logs database
     clearHistoryBtn.addEventListener('click', () => {
         if(confirm("Are you sure you want to clear the entire handover log history?")) {
             localStorage.removeItem('shift_history');
@@ -352,7 +456,9 @@
         }
     });
 
-    // Initialize Application Lifecycle
+    exportCsvBtn.addEventListener('click', exportToCSV);
+
+    // Initial load call
     loadSavedData();
 </script>
 
