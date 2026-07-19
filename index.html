@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShiftSync Enterprise - Accountability Engine</title>
+    <title>ShiftSync Enterprise - Final Edition</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -202,8 +203,12 @@
 
     <!-- SUBSECTION A: PERFORMANCE LEDGER -->
     <div id="mgrSectionLedger" class="mgr-section active">
-        <h3>📊 Employee Efficiency Scorecards</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3>📊 Employee Scorecards</h3>
+            <button onclick="exportMetricsCSV()" class="btn btn-success" style="padding:6px 12px; font-size:12px;">📥 Export CSV Report</button>
+        </div>
         <div id="managerMetricsFeed"></div>
+        <button onclick="resetSystemDatabase()" class="btn btn-danger" style="width:100%; margin-top:10px; font-size:12px; opacity:0.7;">⚠️ Master Reset Database Ledger</button>
     </div>
 
     <!-- SUBSECTION B: REGISTRY MANAGER -->
@@ -239,7 +244,6 @@
 </div>
 
 <script>
-    // Load Database state from localStorage or seed initial parameters
     let systemUsers = JSON.parse(localStorage.getItem('sys_users')) || {
         "EMP101": { name: "Alex", role: "Machinist", dept: "Production", type: "outbound" },
         "EMP102": { name: "Bharath", role: "Specialist Inbound", dept: "Production", type: "inbound" },
@@ -324,8 +328,8 @@
         const role = document.getElementById('newEmpRole').value.trim();
         const type = document.getElementById('newEmpType').value;
 
-        if(!id || !name || !dept || !role) { alert("Complete all profile inputs fields."); return; }
-        if(systemUsers[id]) { alert("ID key registration conflict."); return; }
+        if(!id || !name || !dept || !role) { alert("Complete all profile fields."); return; }
+        if(systemUsers[id]) { alert("ID registration conflict."); return; }
 
         systemUsers[id] = { name: name, role: role, dept: dept, type: type };
         saveUsersToStorage();
@@ -346,7 +350,7 @@
         const type = document.getElementById('taskType').value;
         let pct = parseInt(document.getElementById('taskPct').value) || 50;
 
-        if (!desc) { alert("Please type a description of the task."); return; }
+        if (!desc) { alert("Please type a description."); return; }
         if (type === 'Urgent') pct = 0;
 
         temporaryHandoverList.push({ desc: desc, type: type, originalPct: pct, updatedPct: pct });
@@ -363,7 +367,7 @@
         const container = document.getElementById('liveHandoverContainer');
         container.innerHTML = '';
         if(temporaryHandoverList.length === 0) {
-            container.innerHTML = '<p style="color:#64748b; font-size:13px; text-align:center;">Queue empty. Document tasks below.</p>';
+            container.innerHTML = '<p style="color:#64748b; font-size:13px; text-align:center;">Queue empty.</p>';
         }
         temporaryHandoverList.forEach((t, i) => {
             const div = document.createElement('div');
@@ -386,9 +390,9 @@
 
         if (hasUrgent && hasHalf) {
             gkBox.className = "gatekeeper-box passed";
-            gkTitle.innerHTML = "✅ Gatekeeper Status Verification Passed";
+            gkTitle.innerHTML = "✅ Gatekeeper Status Passed";
             gkTitle.style.color = "var(--success)";
-            gkMsg.innerText = "Mandatory handoff parameters parameters metrics verified.";
+            gkMsg.innerText = "Mandatory handoff parameters verified.";
             punchBtn.disabled = false;
             punchBtn.className = "btn btn-success";
             punchBtn.style.cursor = "pointer";
@@ -396,7 +400,7 @@
             gkBox.className = "gatekeeper-box";
             gkTitle.innerHTML = "🔒 Handover Pipeline Locked";
             gkTitle.style.color = "var(--danger)";
-            gkMsg.innerText = "You must log at least 1 Urgent task AND 1 Half-Done task to establish an active handover state before sign-off is cleared.";
+            gkMsg.innerText = "You must log at least 1 Urgent task AND 1 Half-Done task.";
             punchBtn.disabled = true;
             punchBtn.className = "btn btn-secondary";
             punchBtn.style.cursor = "not-allowed";
@@ -432,7 +436,7 @@
         const pipeline = JSON.parse(localStorage.getItem('sys_pipeline')) || [];
 
         if (pipeline.length === 0) {
-            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:20px;">No incoming shift package files routed to this node pipeline.</p>';
+            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:20px;">No incoming packages routed to this node.</p>';
             return;
         }
 
@@ -500,7 +504,6 @@
                 });
             }
 
-            // Calculate live aggregated performance value
             const avgEfficiency = records.length > 0 ? Math.round(totalCompletion / records.length) : null;
             let scoreBadgeClass = 'score-low';
             let ratingLabel = 'Low Output';
@@ -532,6 +535,37 @@
             `;
             container.appendChild(pCard);
         });
+    }
+
+    // CSV Audit Reporting Engine
+    function exportMetricsCSV() {
+        const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
+        if (Object.keys(metrics).length === 0) { alert("No metrics data currently available to export."); return; }
+
+        let csvContent = "data:text/csv;charset=utf-8,Worker ID,Name,Department,Role,Task Description,Completion Output,Context\n";
+
+        Object.keys(metrics).forEach(empId => {
+            const profile = systemUsers[empId] || { name: "Unknown", dept: "N/A", role: "N/A" };
+            metrics[empId].forEach(r => {
+                let safeTask = r.task.replace(/"/g, '""'); // Escape inner quotes
+                csvContent += `"${empId}","${profile.name}","${profile.dept}","${profile.role}","${safeTask}","${r.completion}%","${r.context}"\n`;
+            });
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Workforce_Accountability_Report_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function resetSystemDatabase() {
+        if (confirm("Are you sure you want to clear all operational ledger history and reset to factory defaults?")) {
+            localStorage.clear();
+            location.reload();
+        }
     }
 </script>
 </body>
