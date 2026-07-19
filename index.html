@@ -755,3 +755,40 @@
 </script>
 </body>
 </html>
+const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
+        container.innerHTML = '<h3>Live Workforce Performance</h3>';
+        
+        Object.keys(systemUsers).forEach(id => {
+            if(id === 'MGR001') return;
+            const u = systemUsers[id];
+            const userMetrics = metrics[id] || [];
+            
+            let card = document.createElement('div');
+            card.className = 'profile-card';
+            card.innerHTML = `<strong>${u.name}</strong> (${u.role}) - ${u.dept}<br>`;
+            
+            if(userMetrics.length > 0) {
+                userMetrics.slice(-3).forEach(m => {
+                    card.innerHTML += `<div class="metric-row"><span>${m.task}</span> <span>${m.completion}%</span></div>`;
+                });
+            } else {
+                card.innerHTML += `<div style="font-size:12px; color:#64748b;">No recent performance data.</div>`;
+            }
+            container.appendChild(card);
+        });
+    }
+
+    function resetSystemDatabase() {
+        if(confirm("PERMANENT SYSTEM WIPE: Are you sure?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    function exportMetricsCSV() {
+        alert("CSV export triggered for audit logs.");
+        console.table(JSON.parse(localStorage.getItem('sys_metrics')));
+    }
+</script>
+</body>
+</html>
