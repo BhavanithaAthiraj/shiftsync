@@ -98,6 +98,10 @@
         .tab-menu { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; overflow-x: auto;}
         .tab-link { font-size: 13px; font-weight: bold; color: #64748b; cursor: pointer; padding: 4px 8px; white-space: nowrap;}
         .tab-link.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        
+        .auth-section { display: none; }
+        .auth-section.active { display: block; }
+        
         .sub-section { display: none; }
         .sub-section.active { display: block; }
 
@@ -155,7 +159,7 @@
     </div>
 
     <!-- Sign In Panel -->
-    <div id="authSigninSection" class="sub-section active">
+    <div id="authSigninSection" class="auth-section active">
         <div class="form-group">
             <label>ID (Worker, HR, Manager, or CEO):</label>
             <input type="text" id="loginId" class="form-control" placeholder="e.g., CEO001">
@@ -168,7 +172,7 @@
     </div>
 
     <!-- Self Register Panel -->
-    <div id="authSignupSection" class="sub-section">
+    <div id="authSignupSection" class="auth-section">
         <div class="form-group">
             <label>Choose Unique ID:</label>
             <input type="text" id="regId" class="form-control" placeholder="e.g., EMP105">
@@ -463,7 +467,6 @@
 </div>
 
 <script>
-    // System Data Architecture Structures with Pre-configured Executives
     let systemUsers = JSON.parse(localStorage.getItem('sys_users')) || {
         "EMP101": { name: "Alex", pass: "123", role: "Machinist", dept: "Production", shift: "Day Shift (6AM-2PM)", type: "outbound", salary: 4500, attendance: "Regular" },
         "EMP102": { name: "Bharath", pass: "123", role: "Specialist Inbound", dept: "Production", shift: "Evening Shift (2PM-10PM)", type: "inbound", salary: 4800, attendance: "Regular" },
@@ -475,7 +478,6 @@
     let globalChats = JSON.parse(localStorage.getItem('sys_chats')) || [];
     let globalGroups = JSON.parse(localStorage.getItem('sys_groups')) || ["General Operations", "Production Team", "Executive Suite"];
     
-    // Troubleshooting Wiki Database
     let globalWiki = JSON.parse(localStorage.getItem('sys_wiki')) || [
         { title: "CNC Machine Spindle Vibration", steps: "1. Check bearing alignment.\n2. Clean debris from chuck.\n3. Recalibrate feed rate to 85%.", image: "", author: "Alex (EMP101)", date: "2026-06-15" }
     ];
@@ -503,7 +505,6 @@
     }
 
     function updateDatalists() {
-        // Collect unique departments and shifts dynamically from existing users
         const deptsSet = new Set();
         const shiftsSet = new Set();
         Object.values(systemUsers).forEach(u => {
@@ -607,7 +608,6 @@
         document.getElementById('loginId').value = '';
         document.getElementById('loginPass').value = '';
 
-        // Role-Based Redirection
         if (activeUser.type === 'ceo') {
             document.getElementById('ceoView').classList.add('active');
             switchCeoTab('overview');
@@ -749,7 +749,6 @@
         }
     }
 
-    // Wiki Logic
     function addNewWikiSolution() {
         const title = document.getElementById('wikiProbTitle').value.trim();
         const steps = document.getElementById('wikiProbSteps').value.trim();
@@ -866,7 +865,6 @@
         }
     }
 
-    // HR Controls
     function loadHrEmployeeForm() {
         const targetId = document.getElementById('hrEditEmpSelect').value;
         const user = systemUsers[targetId];
@@ -917,7 +915,6 @@
         });
     }
 
-    // CEO Overview
     function renderCeoOverview() {
         const users = Object.keys(systemUsers);
         let totalWorkers = users.length;
@@ -973,7 +970,6 @@
         });
     }
 
-    // Task Allocation & Handoff Checklist Logic
     function addTask() {
         const desc = document.getElementById('taskDesc').value.trim();
         const type = document.getElementById('taskType').value;
@@ -1210,7 +1206,6 @@
                     <span style="font-size:12px; background:#e2e8f0; padding:2px 6px; border-radius:4px;">${user.role}</span>
                 </div>
                 <div class="metric-row"><span>Department:</span> <strong>${user.dept}</strong></div>
-                <div class="ns"></div>
                 <div class="metric-row"><span>Shift Timing:</span> <strong>${user.shift}</strong></div>
                 <div class="metric-row"><span>Overall Efficiency Score:</span> <strong style="color:var(--primary);">${totalEff}%</strong></div>
                 <div style="margin-top:10px; font-size:13px; font-weight:600;">Recent Work History:</div>
