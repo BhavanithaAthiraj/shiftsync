@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShiftSync Enterprise - Executive Command Suite</title>
+    <title>ShiftSync Enterprise - Dynamic Command Suite</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -64,7 +64,6 @@
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-secondary { background: #64748b; color: white; }
-        .btn-ceo { background: #7c3aed; color: white; }
         .btn-hr { background: #db2777; color: white; }
 
         .form-group { margin-bottom: 15px; }
@@ -140,7 +139,7 @@
 <!-- VIEW 1: SECURE AUTH / SIGN UP OR SIGN IN -->
 <div id="authView" class="container view-panel active">
     <h2>ShiftSync Enterprise Portal</h2>
-    <p style="color:#64748b; font-size:14px;">Sign in with your credentials or register a new user profile.</p>
+    <p style="color:#64748b; font-size:14px;">Sign in with your credentials or register a custom corporate profile.</p>
     
     <div style="background:#fef3c7; border:1px solid #f59e0b; padding:10px; border-radius:8px; font-size:12px; margin-bottom:15px; color:#b45309;">
         💡 <strong>Quick Test Credentials:</strong><br>
@@ -183,16 +182,18 @@
             <input type="password" id="regPass" class="form-control" placeholder="Create secure password">
         </div>
         <div class="form-group">
-            <label>Department:</label>
-            <select id="regDept" class="form-control"></select>
+            <label>Department (Type any department name):</label>
+            <input type="text" id="regDept" class="form-control" list="deptSuggestions" placeholder="e.g., R&D, Robotics, Assembly">
+            <datalist id="deptSuggestions"></datalist>
         </div>
         <div class="form-group">
-            <label>Operational Shift Assignment:</label>
-            <select id="regShift" class="form-control"></select>
+            <label>Operational Shift Timing (Type any schedule):</label>
+            <input type="text" id="regShift" class="form-control" list="shiftSuggestions" placeholder="e.g., Morning Shift (7AM - 3PM)">
+            <datalist id="shiftSuggestions"></datalist>
         </div>
         <div class="form-group">
             <label>Functional Role / Title:</label>
-            <input type="text" id="regRole" class="form-control" placeholder="e.g., Assembly Technician">
+            <input type="text" id="regRole" class="form-control" placeholder="e.g., Lead Systems Engineer">
         </div>
         <div class="form-group">
             <label>Access Tier Level:</label>
@@ -329,7 +330,6 @@
     <div class="tab-menu">
         <span class="tab-link active" id="tabMgrLedgerBtn" onclick="switchMgrTab('ledger')">Employee Workflow Status</span>
         <span class="tab-link" id="tabMgrWikiBtn" onclick="switchMgrTab('wikiMgr')">Knowledge Base Wiki</span>
-        <span class="tab-link" id="tabMgrManualBtn" onclick="switchMgrTab('manual')">Shift & Department Routing</span>
     </div>
 
     <div id="mgrSectionLedger" class="sub-section active">
@@ -348,26 +348,6 @@
             <input type="text" id="wikiMgrSearchInput" class="form-control" placeholder="Search keyword..." oninput="renderManagerWiki()">
         </div>
         <div id="mgrWikiResultsContainer"></div>
-    </div>
-
-    <div id="mgrSectionManual" class="sub-section">
-        <h3>⚙️ Department & Shift Controls</h3>
-        <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border);">
-            <div class="form-group">
-                <label>Add New Department:</label>
-                <div style="display:flex; gap:6px;">
-                    <input type="text" id="newDeptName" class="form-control" placeholder="e.g., Quality Control">
-                    <button onclick="addNewDepartment()" class="btn btn-success">Add</button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Create Custom Shift:</label>
-                <div style="display:flex; gap:6px;">
-                    <input type="text" id="newShiftName" class="form-control" placeholder="e.g., Night Shift">
-                    <button onclick="addNewShift()" class="btn btn-success">Create</button>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -403,6 +383,14 @@
             <div class="form-group">
                 <label>Designation / Role:</label>
                 <input type="text" id="hrEmpRole" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Department:</label>
+                <input type="text" id="hrEmpDept" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Shift Timing:</label>
+                <input type="text" id="hrEmpShift" class="form-control">
             </div>
             <div class="form-group">
                 <label>Salary ($ / Period):</label>
@@ -484,8 +472,6 @@
         "CEO001": { name: "Arthur Sterling", pass: "admin", role: "Chief Executive Officer", dept: "Executive Board", shift: "Full-Time", type: "ceo", salary: 25000, attendance: "Regular" }
     };
 
-    let globalDepts = JSON.parse(localStorage.getItem('sys_depts')) || ["Production", "Inventory", "Logistics", "Human Resources", "Management", "Executive Board"];
-    let globalShifts = JSON.parse(localStorage.getItem('sys_shifts')) || ["Day Shift (6AM-2PM)", "Evening Shift (2PM-10PM)", "Night Shift (10PM-6AM)", "Full-Time"];
     let globalChats = JSON.parse(localStorage.getItem('sys_chats')) || [];
     let globalGroups = JSON.parse(localStorage.getItem('sys_groups')) || ["General Operations", "Production Team", "Executive Suite"];
     
@@ -507,27 +493,34 @@
     }
     
     saveCoreStructureToStorage();
-    updateDropdownMenus();
+    updateDatalists();
 
     function saveCoreStructureToStorage() {
         localStorage.setItem('sys_users', JSON.stringify(systemUsers));
-        localStorage.setItem('sys_depts', JSON.stringify(globalDepts));
-        localStorage.setItem('sys_shifts', JSON.stringify(globalShifts));
         localStorage.setItem('sys_chats', JSON.stringify(globalChats));
         localStorage.setItem('sys_groups', JSON.stringify(globalGroups));
         localStorage.setItem('sys_wiki', JSON.stringify(globalWiki));
     }
 
-    function updateDropdownMenus() {
-        const regDept = document.getElementById('regDept');
-        if(regDept) {
-            regDept.innerHTML = '';
-            globalDepts.forEach(d => regDept.innerHTML += `<option value="${d}">${d}</option>`);
+    function updateDatalists() {
+        // Collect unique departments and shifts dynamically from existing users
+        const deptsSet = new Set();
+        const shiftsSet = new Set();
+        Object.values(systemUsers).forEach(u => {
+            if(u.dept) deptsSet.add(u.dept);
+            if(u.shift) shiftsSet.add(u.shift);
+        });
+
+        const deptList = document.getElementById('deptSuggestions');
+        if(deptList) {
+            deptList.innerHTML = '';
+            deptsSet.forEach(d => deptList.innerHTML += `<option value="${d}">`);
         }
-        const regShift = document.getElementById('regShift');
-        if(regShift) {
-            regShift.innerHTML = '';
-            globalShifts.forEach(s => regShift.innerHTML += `<option value="${s}">${s}</option>`);
+
+        const shiftList = document.getElementById('shiftSuggestions');
+        if(shiftList) {
+            shiftList.innerHTML = '';
+            shiftsSet.forEach(s => shiftList.innerHTML += `<option value="${s}">`);
         }
 
         const hrSelect = document.getElementById('hrEditEmpSelect');
@@ -552,7 +545,7 @@
         } else {
             document.getElementById('authTabSignUpBtn').classList.add('active');
             document.getElementById('authSignupSection').classList.add('active');
-            updateDropdownMenus();
+            updateDatalists();
         }
     }
 
@@ -560,13 +553,13 @@
         const id = document.getElementById('regId').value.trim();
         const name = document.getElementById('regName').value.trim();
         const pass = document.getElementById('regPass').value.trim();
-        const dept = document.getElementById('regDept').value;
-        const shift = document.getElementById('regShift').value;
+        const dept = document.getElementById('regDept').value.trim();
+        const shift = document.getElementById('regShift').value.trim();
         const role = document.getElementById('regRole').value.trim();
         const type = document.getElementById('regType').value;
 
-        if(!id || !name || !pass || !role) {
-            alert("Please complete all required fields for registration.");
+        if(!id || !name || !pass || !role || !dept || !shift) {
+            alert("Please complete all required fields, including typing your department and shift timing.");
             return;
         }
         if(systemUsers[id]) {
@@ -594,6 +587,8 @@
         document.getElementById('regId').value = '';
         document.getElementById('regName').value = '';
         document.getElementById('regPass').value = '';
+        document.getElementById('regDept').value = '';
+        document.getElementById('regShift').value = '';
         document.getElementById('regRole').value = '';
         switchAuthTab('signin');
     }
@@ -706,10 +701,8 @@
     function switchMgrTab(tab) {
         document.getElementById('tabMgrLedgerBtn').classList.remove('active');
         document.getElementById('tabMgrWikiBtn').classList.remove('active');
-        document.getElementById('tabMgrManualBtn').classList.remove('active');
         document.getElementById('mgrSectionLedger').classList.remove('active');
         document.getElementById('mgrSectionWiki').classList.remove('active');
-        document.getElementById('mgrSectionManual').classList.remove('active');
 
         if(tab === 'ledger') {
             document.getElementById('tabMgrLedgerBtn').classList.add('active');
@@ -719,9 +712,6 @@
             document.getElementById('tabMgrWikiBtn').classList.add('active');
             document.getElementById('mgrSectionWiki').classList.add('active');
             renderManagerWiki();
-        } else {
-            document.getElementById('tabMgrManualBtn').classList.add('active');
-            document.getElementById('mgrSectionManual').classList.add('active');
         }
     }
 
@@ -734,7 +724,7 @@
         if(tab === 'roster') {
             document.getElementById('tabHrRosterBtn').classList.add('active');
             document.getElementById('hrSectionRoster').classList.add('active');
-            updateDropdownMenus();
+            updateDatalists();
         } else {
             document.getElementById('tabHrAttendanceBtn').classList.add('active');
             document.getElementById('hrSectionAttendance').classList.add('active');
@@ -876,28 +866,6 @@
         }
     }
 
-    function addNewDepartment() {
-        const name = document.getElementById('newDeptName').value.trim();
-        if(!name) return;
-        if(globalDepts.includes(name)) { alert("Department already exists."); return; }
-        globalDepts.push(name);
-        saveCoreStructureToStorage();
-        updateDropdownMenus();
-        document.getElementById('newDeptName').value = '';
-        alert(`Department "${name}" generated.`);
-    }
-
-    function addNewShift() {
-        const name = document.getElementById('newShiftName').value.trim();
-        if(!name) return;
-        if(globalShifts.includes(name)) { alert("Shift architecture already exists."); return; }
-        globalShifts.push(name);
-        saveCoreStructureToStorage();
-        updateDropdownMenus();
-        document.getElementById('newShiftName').value = '';
-        alert(`Shift configuration "${name}" created.`);
-    }
-
     // HR Controls
     function loadHrEmployeeForm() {
         const targetId = document.getElementById('hrEditEmpSelect').value;
@@ -906,6 +874,8 @@
 
         document.getElementById('hrEmpName').value = user.name || '';
         document.getElementById('hrEmpRole').value = user.role || '';
+        document.getElementById('hrEmpDept').value = user.dept || '';
+        document.getElementById('hrEmpShift').value = user.shift || '';
         document.getElementById('hrEmpSalary').value = user.salary || 4000;
         document.getElementById('hrEmpAttendance').value = user.attendance || 'Regular';
     }
@@ -916,10 +886,13 @@
 
         systemUsers[targetId].name = document.getElementById('hrEmpName').value.trim();
         systemUsers[targetId].role = document.getElementById('hrEmpRole').value.trim();
+        systemUsers[targetId].dept = document.getElementById('hrEmpDept').value.trim();
+        systemUsers[targetId].shift = document.getElementById('hrEmpShift').value.trim();
         systemUsers[targetId].salary = parseFloat(document.getElementById('hrEmpSalary').value) || 0;
         systemUsers[targetId].attendance = document.getElementById('hrEmpAttendance').value;
 
         saveCoreStructureToStorage();
+        updateDatalists();
         alert(`HR payroll and employee record updated successfully for ${targetId}.`);
     }
 
@@ -937,6 +910,7 @@
                     <span style="font-size:12px; background:#fce7f3; color:#db2777; padding:2px 6px; border-radius:4px; font-weight:bold;">${user.attendance || 'Regular'}</span>
                 </div>
                 <div class="metric-row"><span>Department:</span> <strong>${user.dept}</strong></div>
+                <div class="metric-row"><span>Shift:</span> <strong>${user.shift}</strong></div>
                 <div class="metric-row"><span>Base Salary:</span> <strong>$${user.salary || 4000}</strong></div>
             `;
             container.appendChild(card);
@@ -991,6 +965,7 @@
                 </div>
                 <div class="metric-row"><span>Department:</span> <strong>${user.dept}</strong></div>
                 <div class="metric-row"><span>Role:</span> <strong>${user.role}</strong></div>
+                <div class="metric-row"><span>Shift:</span> <strong>${user.shift}</strong></div>
                 <div class="metric-row"><span>Salary:</span> <strong>$${user.salary || 4000}</strong></div>
                 <div class="metric-row"><span>Efficiency Score:</span> <strong style="color:var(--primary);">${totalEff}%</strong></div>
             `;
@@ -1197,7 +1172,7 @@
         if(!container) return;
         container.innerHTML = '';
         const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
-        const searchQuery = document.getElementById('empSearchInput') ? document.getElementById('empSearchInput').value.toLowerCase() : '';
+        const searchQuery = document.getElementById('empSearchInput') ? document.getElementById('empSearchInput'].value.toLowerCase() : '';
 
         Object.keys(systemUsers).forEach(uid => {
             const user = systemUsers[uid];
@@ -1235,6 +1210,7 @@
                     <span style="font-size:12px; background:#e2e8f0; padding:2px 6px; border-radius:4px;">${user.role}</span>
                 </div>
                 <div class="metric-row"><span>Department:</span> <strong>${user.dept}</strong></div>
+                <div class="ns"></div>
                 <div class="metric-row"><span>Shift Timing:</span> <strong>${user.shift}</strong></div>
                 <div class="metric-row"><span>Overall Efficiency Score:</span> <strong style="color:var(--primary);">${totalEff}%</strong></div>
                 <div style="margin-top:10px; font-size:13px; font-weight:600;">Recent Work History:</div>
