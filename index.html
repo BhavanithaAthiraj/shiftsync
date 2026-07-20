@@ -112,6 +112,10 @@
         }
         .chat-bubble.me { background: #dbeafe; align-self: flex-end; margin-left: auto; }
         .chat-meta { font-size: 10px; color: #64748b; margin-bottom: 2px; }
+
+        .wiki-img-preview {
+            max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 8px; border: 1px solid var(--border); object-fit: cover; display: block;
+        }
     </style>
 </head>
 <body>
@@ -239,22 +243,26 @@
     <!-- TROUBLESHOOTING WIKI TAB -->
     <div id="workerTabWiki" class="sub-section">
         <h3>🔧 Error & Troubleshooting Knowledge Base</h3>
-        <p style="font-size:13px; color:#64748b;">Search for past solutions or log a newly solved problem step-by-step.</p>
+        <p style="font-size:13px; color:#64748b;">Search keywords to find matching solutions, or log a new problem with photo evidence.</p>
         
         <div class="form-group">
-            <label>Search Error or Symptom:</label>
-            <input type="text" id="wikiSearchInput" class="form-control" placeholder="e.g., CNC Motor Jam, Overheating, Sensor Error" oninput="renderTroubleshootingWiki()">
+            <label>Search Error, Equipment, or Symptom:</label>
+            <input type="text" id="wikiSearchInput" class="form-control" placeholder="e.g., hydraulic, motor, pressure..." oninput="renderTroubleshootingWiki()">
         </div>
 
         <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:15px;">
-            <h4 style="margin-top:0; font-size:14px; color:#1e293b;">➕ Log a New Solution</h4>
+            <h4 style="margin-top:0; font-size:14px; color:#1e293b;">➕ Log a New Solution & Attach Photo</h4>
             <div class="form-group">
-                <label>Problem / Error Name:</label>
-                <input type="text" id="wikiProbTitle" class="form-control" placeholder="e.g., Hydraulic Pressure Drop">
+                <label>Problem / Error Title:</label>
+                <input type="text" id="wikiProbTitle" class="form-control" placeholder="e.g., Hydraulic Pressure Lift Failure">
             </div>
             <div class="form-group">
                 <label>Step-by-Step Resolution Guide:</label>
-                <textarea id="wikiProbSteps" class="form-control" rows="3" placeholder="Step 1: Check main valve... Step 2: Reset pressure gauge..."></textarea>
+                <textarea id="wikiProbSteps" class="form-control" rows="3" placeholder="Step 1: Check fluid line... Step 2: Reset main breaker..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Attach Photo (Camera / Gallery):</label>
+                <input type="file" id="wikiImageInput" accept="image/*" class="form-control" style="padding:6px;">
             </div>
             <button onclick="addNewWikiSolution()" class="btn btn-success" style="width:100%;">Publish Solution to Wiki</button>
         </div>
@@ -313,10 +321,10 @@
     <!-- SUBSECTION B: KNOWLEDGE BASE WIKI MANAGER -->
     <div id="mgrSectionWiki" class="sub-section">
         <h3>🔧 Troubleshooting Wiki Oversight</h3>
-        <p style="font-size:13px; color:#64748b;">Review all error resolutions logged by workers across the factory.</p>
+        <p style="font-size:13px; color:#64748b;">Review and curate error resolutions logged by workers across the factory.</p>
         <div class="form-group">
             <label>Search Wiki Knowledge Base:</label>
-            <input type="text" id="wikiMgrSearchInput" class="form-control" placeholder="Search error..." oninput="renderManagerWiki()">
+            <input type="text" id="wikiMgrSearchInput" class="form-control" placeholder="Search error keyword..." oninput="renderManagerWiki()">
         </div>
         <div id="mgrWikiResultsContainer"></div>
     </div>
@@ -396,7 +404,7 @@
     
     // Troubleshooting Wiki Database
     let globalWiki = JSON.parse(localStorage.getItem('sys_wiki')) || [
-        { title: "CNC Machine Spindle Vibration", steps: "1. Check bearing alignment.\n2. Clean debris from chuck.\n3. Recalibrate feed rate to 85%.", author: "Alex (EMP101)", date: "2026-06-15" }
+        { title: "CNC Machine Spindle Vibration", steps: "1. Check bearing alignment.\n2. Clean debris from chuck.\n3. Recalibrate feed rate to 85%.", image: "", author: "Alex (EMP101)", date: "2026-06-15" }
     ];
 
     let activeUser = null;
@@ -633,19 +641,33 @@
         }
     }
 
-    // Troubleshooting Wiki Logic
+    // Troubleshooting Wiki Logic with Image Support & Keyword Matching
     function addNewWikiSolution() {
         const title = document.getElementById('wikiProbTitle').value.trim();
         const steps = document.getElementById('wikiProbSteps').value.trim();
+        const fileInput = document.getElementById('wikiImageInput');
 
         if(!title || !steps) {
             alert("Please provide both the error title and the step-by-step resolution.");
             return;
         }
 
+        if(fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                commitWikiEntry(title, steps, e.target.result);
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            commitWikiEntry(title, steps, "");
+        }
+    }
+
+    function commitWikiEntry(title, steps, imageData) {
         globalWiki.push({
             title: title,
             steps: steps,
+            image: imageData,
             author: `${activeUser.name} (${activeUser.id})`,
             date: new Date().toLocaleDateString()
         });
@@ -653,29 +675,40 @@
         saveCoreStructureToStorage();
         document.getElementById('wikiProbTitle').value = '';
         document.getElementById('wikiProbSteps').value = '';
-        alert("Solution successfully published to the company knowledge base!");
+        document.getElementById('wikiImageInput').value = '';
+        alert("Solution with photo evidence successfully published to the company knowledge base!");
         renderTroubleshootingWiki();
     }
 
     function renderTroubleshootingWiki() {
         const container = document.getElementById('wikiResultsContainer');
-        const query = document.getElementById('wikiSearchInput').value.toLowerCase();
+        const queryInput = document.getElementById('wikiSearchInput');
+        const query = queryInput ? queryInput.value.toLowerCase().trim() : '';
         container.innerHTML = '';
 
-        const filtered = globalWiki.filter(w => w.title.toLowerCase().includes(query) || w.steps.toLowerCase().includes(query));
+        // Flexible keyword filter: splits query into space-separated terms
+        const queryTerms = query ? query.split(/\s+/) : [];
+
+        const filtered = globalWiki.filter(w => {
+            if(queryTerms.length === 0) return true;
+            const fullText = (w.title + " " + w.steps).toLowerCase();
+            return queryTerms.every(term => fullText.includes(term));
+        });
 
         if(filtered.length === 0) {
-            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">No matching troubleshooting guides found. Try searching another term or log a new solution above.</p>';
+            container.innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">No matching troubleshooting guides found. Try broader keywords or log a new solution above.</p>';
             return;
         }
 
         filtered.slice().reverse().forEach(w => {
             const card = document.createElement('div');
             card.className = 'work-card';
+            let imgHtml = w.image ? `<img src="${w.image}" class="wiki-img-preview" alt="Solution reference photo">` : '';
             card.innerHTML = `
                 <div style="font-weight:bold; font-size:15px; color:#1e293b; margin-bottom:4px;">🛠️ ${w.title}</div>
                 <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Logged by ${w.author} on ${w.date}</div>
                 <div style="font-size:13px; background:#ffffff; padding:10px; border-radius:6px; border:1px solid var(--border); white-space:pre-line;">${w.steps}</div>
+                ${imgHtml}
             `;
             container.appendChild(card);
         });
@@ -683,10 +716,17 @@
 
     function renderManagerWiki() {
         const container = document.getElementById('mgrWikiResultsContainer');
-        const query = document.getElementById('wikiMgrSearchInput') ? document.getElementById('wikiMgrSearchInput').value.toLowerCase() : '';
+        const queryInput = document.getElementById('wikiMgrSearchInput');
+        const query = queryInput ? queryInput.value.toLowerCase().trim() : '';
         container.innerHTML = '';
 
-        const filtered = globalWiki.filter(w => w.title.toLowerCase().includes(query) || w.steps.toLowerCase().includes(query));
+        const queryTerms = query ? query.split(/\s+/) : [];
+
+        const filtered = globalWiki.filter(w => {
+            if(queryTerms.length === 0) return true;
+            const fullText = (w.title + " " + w.steps).toLowerCase();
+            return queryTerms.every(term => fullText.includes(term));
+        });
 
         if(filtered.length === 0) {
             container.innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">No knowledge base records found.</p>';
@@ -694,15 +734,19 @@
         }
 
         filtered.slice().reverse().forEach((w, index) => {
+            // Find true index in globalWiki for removal reference
+            const originalIndex = globalWiki.indexOf(w);
             const card = document.createElement('div');
             card.className = 'work-card';
+            let imgHtml = w.image ? `<img src="${w.image}" class="wiki-img-preview" alt="Solution reference photo">` : '';
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong style="font-size:15px; color:#1e293b;">🛠️ ${w.title}</strong>
-                    <button onclick="deleteWikiEntry(${index})" class="btn btn-danger" style="padding:2px 8px; font-size:11px;">Remove</button>
+                    <button onclick="deleteWikiEntry(${originalIndex})" class="btn btn-danger" style="padding:2px 8px; font-size:11px;">Remove</button>
                 </div>
                 <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Logged by ${w.author} on ${w.date}</div>
                 <div style="font-size:13px; background:#ffffff; padding:10px; border-radius:6px; border:1px solid var(--border); white-space:pre-line;">${w.steps}</div>
+                ${imgHtml}
             `;
             container.appendChild(card);
         });
