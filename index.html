@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShiftSync Enterprise - Operational Engine</title>
+    <title>ShiftSync Enterprise - Executive Command Suite</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -64,6 +64,8 @@
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-secondary { background: #64748b; color: white; }
+        .btn-ceo { background: #7c3aed; color: white; }
+        .btn-hr { background: #db2777; color: white; }
 
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;}
@@ -116,6 +118,21 @@
         .wiki-img-preview {
             max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 8px; border: 1px solid var(--border); object-fit: cover; display: block;
         }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .kpi-box {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .kpi-value { font-size: 20px; font-weight: bold; color: var(--primary); }
+        .kpi-label { font-size: 11px; color: #64748b; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -125,7 +142,15 @@
     <h2>ShiftSync Enterprise Portal</h2>
     <p style="color:#64748b; font-size:14px;">Sign in with your credentials or register a new user profile.</p>
     
-    <div class="tab-menu" style="margin-top: 15px;">
+    <div style="background:#fef3c7; border:1px solid #f59e0b; padding:10px; border-radius:8px; font-size:12px; margin-bottom:15px; color:#b45309;">
+        💡 <strong>Quick Test Credentials:</strong><br>
+        • CEO: <code>CEO001</code> (pass: <code>admin</code>)<br>
+        • HR Lead: <code>HR001</code> (pass: <code>admin</code>)<br>
+        • Operations Mgr: <code>MGR001</code> (pass: <code>admin</code>)<br>
+        • Worker: <code>EMP101</code> (pass: <code>123</code>)
+    </div>
+
+    <div class="tab-menu">
         <span class="tab-link active" id="authTabSignInBtn" onclick="switchAuthTab('signin')">Sign In</span>
         <span class="tab-link" id="authTabSignUpBtn" onclick="switchAuthTab('signup')">Self Register</span>
     </div>
@@ -133,8 +158,8 @@
     <!-- Sign In Panel -->
     <div id="authSigninSection" class="sub-section active">
         <div class="form-group">
-            <label>Worker ID / Manager ID:</label>
-            <input type="text" id="loginId" class="form-control" placeholder="e.g., EMP101">
+            <label>ID (Worker, HR, Manager, or CEO):</label>
+            <input type="text" id="loginId" class="form-control" placeholder="e.g., CEO001">
         </div>
         <div class="form-group">
             <label>Secure Password:</label>
@@ -146,7 +171,7 @@
     <!-- Self Register Panel -->
     <div id="authSignupSection" class="sub-section">
         <div class="form-group">
-            <label>Choose Unique Worker ID:</label>
+            <label>Choose Unique ID:</label>
             <input type="text" id="regId" class="form-control" placeholder="e.g., EMP105">
         </div>
         <div class="form-group">
@@ -170,10 +195,13 @@
             <input type="text" id="regRole" class="form-control" placeholder="e.g., Assembly Technician">
         </div>
         <div class="form-group">
-            <label>Shift Alignment Flow:</label>
+            <label>Access Tier Level:</label>
             <select id="regType" class="form-control">
                 <option value="outbound">Outbound Shift Worker</option>
                 <option value="inbound">Inbound Shift Worker</option>
+                <option value="manager">Operations Manager</option>
+                <option value="hr">HR Executive</option>
+                <option value="ceo">Chief Executive Officer (CEO)</option>
             </select>
         </div>
         <button onclick="selfRegisterUser()" class="btn btn-success" style="width:100%;">Register & Create Account</button>
@@ -288,100 +316,54 @@
     </div>
 </div>
 
-<!-- VIEW 3: MANAGEMENT SYSTEMS ACCESS -->
+<!-- VIEW 3: OPERATIONS MANAGER COMMAND CENTER -->
 <div id="managerView" class="container view-panel">
     <div class="nav-header">
         <div>
             <strong>Operations Command Center</strong>
-            <div style="font-size:12px; color:#64748b;">System Administrator & Management Layer</div>
+            <div style="font-size:12px; color:#64748b;">Operations Manager Portal</div>
         </div>
         <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Sign Out</button>
     </div>
 
     <div class="tab-menu">
-        <span class="tab-link active" id="tabLedgerBtn" onclick="switchMgrTab('ledger')">Employee Dossier Ledger</span>
-        <span class="tab-link" id="tabWikiMgrBtn" onclick="switchMgrTab('wikiMgr')">Knowledge Base Wiki</span>
-        <span class="tab-link" id="tabManualBtn" onclick="switchMgrTab('manual')">Company Data Configuration</span>
+        <span class="tab-link active" id="tabMgrLedgerBtn" onclick="switchMgrTab('ledger')">Employee Workflow Status</span>
+        <span class="tab-link" id="tabMgrWikiBtn" onclick="switchMgrTab('wikiMgr')">Knowledge Base Wiki</span>
+        <span class="tab-link" id="tabMgrManualBtn" onclick="switchMgrTab('manual')">Shift & Department Routing</span>
     </div>
 
-    <!-- SUBSECTION A: EMPLOYEE DOSSIER LEDGER -->
     <div id="mgrSectionLedger" class="sub-section active">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3>🔍 Comprehensive Employee Dossier</h3>
-            <button onclick="exportMetricsCSV()" class="btn btn-success" style="padding:6px 12px; font-size:12px;">📥 Export CSV Report</button>
-        </div>
+        <h3>🔍 Active Workforce Progress</h3>
         <div class="form-group">
-            <label>Search Employee (Name or ID):</label>
-            <input type="text" id="empSearchInput" class="form-control" placeholder="Type name or ID (e.g. EMP101)" oninput="renderManagerDashboard()">
+            <label>Search Employee:</label>
+            <input type="text" id="empSearchInput" class="form-control" placeholder="Type name or ID..." oninput="renderManagerDashboard()">
         </div>
         <div id="managerMetricsFeed"></div>
-        <button onclick="resetSystemDatabase()" class="btn btn-danger" style="width:100%; margin-top:20px; font-size:12px; opacity:0.8;">⚠️ Factory Hard Reset</button>
     </div>
 
-    <!-- SUBSECTION B: KNOWLEDGE BASE WIKI MANAGER -->
     <div id="mgrSectionWiki" class="sub-section">
         <h3>🔧 Troubleshooting Wiki Oversight</h3>
-        <p style="font-size:13px; color:#64748b;">Review and curate error resolutions logged by workers across the factory.</p>
         <div class="form-group">
-            <label>Search Wiki Knowledge Base:</label>
-            <input type="text" id="wikiMgrSearchInput" class="form-control" placeholder="Search error keyword..." oninput="renderManagerWiki()">
+            <label>Search Knowledge Base:</label>
+            <input type="text" id="wikiMgrSearchInput" class="form-control" placeholder="Search keyword..." oninput="renderManagerWiki()">
         </div>
         <div id="mgrWikiResultsContainer"></div>
     </div>
 
-    <!-- SUBSECTION C: MANUAL COMPANY DATA ENTRY -->
     <div id="mgrSectionManual" class="sub-section">
-        <h3>⚙️ Company-Side Data Management</h3>
-        <p style="font-size:13px; color:#64748b;">Manually update salaries, shifts, attendance, and official profiles.</p>
-        <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:15px;">
-            <div class="form-group">
-                <label>Select Target Employee ID:</label>
-                <select id="editEmpTargetSelect" class="form-control" onchange="loadEmployeeDataIntoForm()"></select>
-            </div>
-            <div class="form-group">
-                <label>Full Name:</label>
-                <input type="text" id="editEmpName" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>Department:</label>
-                <select id="editEmpDept" class="form-control"></select>
-            </div>
-            <div class="form-group">
-                <label>Shift Timing:</label>
-                <select id="editEmpShift" class="form-control"></select>
-            </div>
-            <div class="form-group">
-                <label>Functional Role / Title:</label>
-                <input type="text" id="editEmpRole" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>Salary ($ / Period):</label>
-                <input type="number" id="editEmpSalary" class="form-control" placeholder="5000">
-            </div>
-            <div class="form-group">
-                <label>Attendance Status Record:</label>
-                <select id="editEmpAttendanceStatus" class="form-control">
-                    <option value="Regular">Regular / Present</option>
-                    <option value="On Leave">On Leave</option>
-                    <option value="Late">Late Arrival</option>
-                </select>
-            </div>
-            <button onclick="saveCompanyManagedEmployeeData()" class="btn btn-primary" style="width:100%;">Commit Company-Side Profile Update</button>
-        </div>
-
-        <h3>🏢 Dynamic Department & Shift Controls</h3>
+        <h3>⚙️ Department & Shift Controls</h3>
         <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border);">
             <div class="form-group">
-                <label>Add New Department Name:</label>
+                <label>Add New Department:</label>
                 <div style="display:flex; gap:6px;">
                     <input type="text" id="newDeptName" class="form-control" placeholder="e.g., Quality Control">
                     <button onclick="addNewDepartment()" class="btn btn-success">Add</button>
                 </div>
             </div>
             <div class="form-group">
-                <label>Create Custom Operational Shift:</label>
+                <label>Create Custom Shift:</label>
                 <div style="display:flex; gap:6px;">
-                    <input type="text" id="newShiftName" class="form-control" placeholder="e.g., Night Shift (10PM-6AM)">
+                    <input type="text" id="newShiftName" class="form-control" placeholder="e.g., Night Shift">
                     <button onclick="addNewShift()" class="btn btn-success">Create</button>
                 </div>
             </div>
@@ -389,18 +371,123 @@
     </div>
 </div>
 
+<!-- VIEW 4: HR EXECUTIVE PORTAL -->
+<div id="hrView" class="container view-panel">
+    <div class="nav-header">
+        <div>
+            <strong>HR Executive Suite</strong>
+            <div style="font-size:12px; color:#db2777;">Human Resources & Payroll Compliance</div>
+        </div>
+        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Sign Out</button>
+    </div>
+
+    <div class="tab-menu">
+        <span class="tab-link active" id="tabHrRosterBtn" onclick="switchHrTab('roster')">Staff Payroll & Records</span>
+        <span class="tab-link" id="tabHrAttendanceBtn" onclick="switchHrTab('attendance')">Attendance & Compliance</span>
+    </div>
+
+    <div id="hrSectionRoster" class="sub-section active">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3>📋 Employee Roster & Salary Management</h3>
+            <button onclick="exportMetricsCSV()" class="btn btn-hr" style="padding:6px 12px; font-size:12px;">📥 Export Payroll CSV</button>
+        </div>
+        <div class="form-group">
+            <label>Select Target Employee:</label>
+            <select id="hrEditEmpSelect" class="form-control" onchange="loadHrEmployeeForm()"></select>
+        </div>
+        <div style="background:#f8fafc; padding:12px; border-radius:10px; border:1px solid var(--border);">
+            <div class="form-group">
+                <label>Full Name:</label>
+                <input type="text" id="hrEmpName" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Designation / Role:</label>
+                <input type="text" id="hrEmpRole" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Salary ($ / Period):</label>
+                <input type="number" id="hrEmpSalary" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Attendance Record Status:</label>
+                <select id="hrEmpAttendance" class="form-control">
+                    <option value="Regular">Regular / Present</option>
+                    <option value="On Leave">On Leave</option>
+                    <option value="Late">Late Arrival</option>
+                </select>
+            </div>
+            <button onclick="saveHrEmployeeEdits()" class="btn btn-hr" style="width:100%;">Commit HR Roster Update</button>
+        </div>
+    </div>
+
+    <div id="hrSectionAttendance" class="sub-section">
+        <h3>📊 Workforce Compliance Overview</h3>
+        <div id="hrComplianceFeed"></div>
+    </div>
+</div>
+
+<!-- VIEW 5: CEO EXECUTIVE COMMAND PORTAL -->
+<div id="ceoView" class="container view-panel">
+    <div class="nav-header">
+        <div>
+            <strong>Chief Executive Officer Suite</strong>
+            <div style="font-size:12px; color:#7c3aed;">Enterprise-Wide Intelligence & Governance</div>
+        </div>
+        <button onclick="logout()" class="btn btn-secondary" style="padding:6px 12px;">Sign Out</button>
+    </div>
+
+    <div class="tab-menu">
+        <span class="tab-link active" id="tabCeoOverviewBtn" onclick="switchCeoTab('overview')">Executive Summary</span>
+        <span class="tab-link" id="tabCeoAuditBtn" onclick="switchCeoTab('audit')">Master Company Audit</span>
+    </div>
+
+    <div id="ceoSectionOverview" class="sub-section active">
+        <h3>📈 Enterprise Key Performance Indicators</h3>
+        <div class="dashboard-grid">
+            <div class="kpi-box">
+                <div class="kpi-value" id="kpiTotalWorkers">0</div>
+                <div class="kpi-label">Active Workforce</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-value" id="kpiAvgEfficiency">0%</div>
+                <div class="kpi-label">Company Efficiency</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-value" id="kpiTotalPayroll">$0</div>
+                <div class="kpi-label">Total Payroll Expenditure</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-value" id="kpiWikiGuides">0</div>
+                <div class="kpi-label">Knowledge Base Articles</div>
+            </div>
+        </div>
+        <div style="background:#f8fafc; padding:15px; border-radius:10px; border:1px solid var(--border);">
+            <h4 style="margin-top:0;">🌐 Global Factory Status</h4>
+            <p style="font-size:13px; color:#64748b;">All manufacturing and operational pipelines are currently synchronized across departments. Use the audit tab below to review individual dossiers or execute a hard reset.</p>
+        </div>
+    </div>
+
+    <div id="ceoSectionAudit" class="sub-section">
+        <h3>🏢 Complete Corporate Audit Ledger</h3>
+        <div id="ceoAuditFeed"></div>
+        <button onclick="resetSystemDatabase()" class="btn btn-danger" style="width:100%; margin-top:20px; font-size:12px; opacity:0.8;">⚠️ Factory Hard Reset</button>
+    </div>
+</div>
+
 <script>
-    // System Data Architecture Structures
+    // System Data Architecture Structures with Pre-configured Executives
     let systemUsers = JSON.parse(localStorage.getItem('sys_users')) || {
         "EMP101": { name: "Alex", pass: "123", role: "Machinist", dept: "Production", shift: "Day Shift (6AM-2PM)", type: "outbound", salary: 4500, attendance: "Regular" },
         "EMP102": { name: "Bharath", pass: "123", role: "Specialist Inbound", dept: "Production", shift: "Evening Shift (2PM-10PM)", type: "inbound", salary: 4800, attendance: "Regular" },
-        "MGR001": { name: "Director Alpha", pass: "admin", role: "Operations Manager", dept: "Management", shift: "Full-Time", type: "manager", salary: 95000, attendance: "Regular" }
+        "MGR001": { name: "Director Alpha", pass: "admin", role: "Operations Manager", dept: "Management", shift: "Full-Time", type: "manager", salary: 12000, attendance: "Regular" },
+        "HR001": { name: "Sarah Jenkins", pass: "admin", role: "HR Lead", dept: "Human Resources", shift: "Full-Time", type: "hr", salary: 11000, attendance: "Regular" },
+        "CEO001": { name: "Arthur Sterling", pass: "admin", role: "Chief Executive Officer", dept: "Executive Board", shift: "Full-Time", type: "ceo", salary: 25000, attendance: "Regular" }
     };
 
-    let globalDepts = JSON.parse(localStorage.getItem('sys_depts')) || ["Production", "Inventory", "Logistics", "Management"];
+    let globalDepts = JSON.parse(localStorage.getItem('sys_depts')) || ["Production", "Inventory", "Logistics", "Human Resources", "Management", "Executive Board"];
     let globalShifts = JSON.parse(localStorage.getItem('sys_shifts')) || ["Day Shift (6AM-2PM)", "Evening Shift (2PM-10PM)", "Night Shift (10PM-6AM)", "Full-Time"];
     let globalChats = JSON.parse(localStorage.getItem('sys_chats')) || [];
-    let globalGroups = JSON.parse(localStorage.getItem('sys_groups')) || ["General Operations", "Production Team"];
+    let globalGroups = JSON.parse(localStorage.getItem('sys_groups')) || ["General Operations", "Production Team", "Executive Suite"];
     
     // Troubleshooting Wiki Database
     let globalWiki = JSON.parse(localStorage.getItem('sys_wiki')) || [
@@ -443,24 +530,13 @@
             globalShifts.forEach(s => regShift.innerHTML += `<option value="${s}">${s}</option>`);
         }
 
-        const editTarget = document.getElementById('editEmpTargetSelect');
-        if(editTarget) {
-            editTarget.innerHTML = '';
+        const hrSelect = document.getElementById('hrEditEmpSelect');
+        if(hrSelect) {
+            hrSelect.innerHTML = '';
             Object.keys(systemUsers).forEach(uid => {
-                editTarget.innerHTML += `<option value="${uid}">${uid} - ${systemUsers[uid].name} (${systemUsers[uid].role})</option>`;
+                hrSelect.innerHTML += `<option value="${uid}">${uid} - ${systemUsers[uid].name} (${systemUsers[uid].role})</option>`;
             });
-            loadEmployeeDataIntoForm();
-        }
-
-        const editDept = document.getElementById('editEmpDept');
-        if(editDept) {
-            editDept.innerHTML = '';
-            globalDepts.forEach(d => editDept.innerHTML += `<option value="${d}">${d}</option>`);
-        }
-        const editShift = document.getElementById('editEmpShift');
-        if(editShift) {
-            editShift.innerHTML = '';
-            globalShifts.forEach(s => editShift.innerHTML += `<option value="${s}">${s}</option>`);
+            loadHrEmployeeForm();
         }
     }
 
@@ -536,7 +612,14 @@
         document.getElementById('loginId').value = '';
         document.getElementById('loginPass').value = '';
 
-        if (activeUser.type === 'manager') {
+        // Role-Based Redirection
+        if (activeUser.type === 'ceo') {
+            document.getElementById('ceoView').classList.add('active');
+            switchCeoTab('overview');
+        } else if (activeUser.type === 'hr') {
+            document.getElementById('hrView').classList.add('active');
+            switchHrTab('roster');
+        } else if (activeUser.type === 'manager') {
             document.getElementById('managerView').classList.add('active');
             switchMgrTab('ledger');
         } else {
@@ -574,7 +657,7 @@
             document.getElementById('inboundProcessPanel').style.display = 'none';
             temporaryHandoverList = [];
             renderOutboundLiveStream();
-        } else {
+        } else if (activeUser.type === 'inbound') {
             document.getElementById('outboundTransferPanel').style.display = 'none';
             document.getElementById('inboundProcessPanel').style.display = 'block';
             renderInboundQueue();
@@ -586,12 +669,14 @@
         const status = document.getElementById('attendanceStatus');
         if (isPunchedIn) {
             status.innerText = "Status: ACTIVE ON-DUTY";
-            btn.style.display = 'none';
+            if(btn) btn.style.display = 'none';
         } else {
             status.innerText = "Status: Off-Duty";
-            btn.style.display = 'block';
-            document.getElementById('outboundTransferPanel').style.display = 'none';
-            document.getElementById('inboundProcessPanel').style.display = 'none';
+            if(btn) btn.style.display = 'block';
+            const outPanel = document.getElementById('outboundTransferPanel');
+            const inPanel = document.getElementById('inboundProcessPanel');
+            if(outPanel) outPanel.style.display = 'none';
+            if(inPanel) inPanel.style.display = 'none';
         }
     }
 
@@ -619,29 +704,62 @@
     }
 
     function switchMgrTab(tab) {
-        document.getElementById('tabLedgerBtn').classList.remove('active');
-        document.getElementById('tabWikiMgrBtn').classList.remove('active');
-        document.getElementById('tabManualBtn').classList.remove('active');
+        document.getElementById('tabMgrLedgerBtn').classList.remove('active');
+        document.getElementById('tabMgrWikiBtn').classList.remove('active');
+        document.getElementById('tabMgrManualBtn').classList.remove('active');
         document.getElementById('mgrSectionLedger').classList.remove('active');
         document.getElementById('mgrSectionWiki').classList.remove('active');
         document.getElementById('mgrSectionManual').classList.remove('active');
 
         if(tab === 'ledger') {
-            document.getElementById('tabLedgerBtn').classList.add('active');
+            document.getElementById('tabMgrLedgerBtn').classList.add('active');
             document.getElementById('mgrSectionLedger').classList.add('active');
             renderManagerDashboard();
         } else if(tab === 'wikiMgr') {
-            document.getElementById('tabWikiMgrBtn').classList.add('active');
+            document.getElementById('tabMgrWikiBtn').classList.add('active');
             document.getElementById('mgrSectionWiki').classList.add('active');
             renderManagerWiki();
         } else {
-            document.getElementById('tabManualBtn').classList.add('active');
+            document.getElementById('tabMgrManualBtn').classList.add('active');
             document.getElementById('mgrSectionManual').classList.add('active');
-            updateDropdownMenus();
         }
     }
 
-    // Troubleshooting Wiki Logic with Image Support & Keyword Matching
+    function switchHrTab(tab) {
+        document.getElementById('tabHrRosterBtn').classList.remove('active');
+        document.getElementById('tabHrAttendanceBtn').classList.remove('active');
+        document.getElementById('hrSectionRoster').classList.remove('active');
+        document.getElementById('hrSectionAttendance').classList.remove('active');
+
+        if(tab === 'roster') {
+            document.getElementById('tabHrRosterBtn').classList.add('active');
+            document.getElementById('hrSectionRoster').classList.add('active');
+            updateDropdownMenus();
+        } else {
+            document.getElementById('tabHrAttendanceBtn').classList.add('active');
+            document.getElementById('hrSectionAttendance').classList.add('active');
+            renderHrComplianceFeed();
+        }
+    }
+
+    function switchCeoTab(tab) {
+        document.getElementById('tabCeoOverviewBtn').classList.remove('active');
+        document.getElementById('tabCeoAuditBtn').classList.remove('active');
+        document.getElementById('ceoSectionOverview').classList.remove('active');
+        document.getElementById('ceoSectionAudit').classList.remove('active');
+
+        if(tab === 'overview') {
+            document.getElementById('tabCeoOverviewBtn').classList.add('active');
+            document.getElementById('ceoSectionOverview').classList.add('active');
+            renderCeoOverview();
+        } else {
+            document.getElementById('tabCeoAuditBtn').classList.add('active');
+            document.getElementById('ceoSectionAudit').classList.add('active');
+            renderCeoAuditFeed();
+        }
+    }
+
+    // Wiki Logic
     function addNewWikiSolution() {
         const title = document.getElementById('wikiProbTitle').value.trim();
         const steps = document.getElementById('wikiProbSteps').value.trim();
@@ -686,7 +804,6 @@
         const query = queryInput ? queryInput.value.toLowerCase().trim() : '';
         container.innerHTML = '';
 
-        // Flexible keyword filter: splits query into space-separated terms
         const queryTerms = query ? query.split(/\s+/) : [];
 
         const filtered = globalWiki.filter(w => {
@@ -733,8 +850,7 @@
             return;
         }
 
-        filtered.slice().reverse().forEach((w, index) => {
-            // Find true index in globalWiki for removal reference
+        filtered.slice().reverse().forEach((w) => {
             const originalIndex = globalWiki.indexOf(w);
             const card = document.createElement('div');
             card.className = 'work-card';
@@ -760,7 +876,6 @@
         }
     }
 
-    // Dynamic Org Management Logic
     function addNewDepartment() {
         const name = document.getElementById('newDeptName').value.trim();
         if(!name) return;
@@ -783,34 +898,104 @@
         alert(`Shift configuration "${name}" created.`);
     }
 
-    // Company Manual Data Entry Handling
-    function loadEmployeeDataIntoForm() {
-        const targetId = document.getElementById('editEmpTargetSelect').value;
+    // HR Controls
+    function loadHrEmployeeForm() {
+        const targetId = document.getElementById('hrEditEmpSelect').value;
         const user = systemUsers[targetId];
         if(!user) return;
 
-        document.getElementById('editEmpName').value = user.name || '';
-        document.getElementById('editEmpDept').value = user.dept || globalDepts[0];
-        document.getElementById('editEmpShift').value = user.shift || globalShifts[0];
-        document.getElementById('editEmpRole').value = user.role || '';
-        document.getElementById('editEmpSalary').value = user.salary || 4000;
-        document.getElementById('editEmpAttendanceStatus').value = user.attendance || 'Regular';
+        document.getElementById('hrEmpName').value = user.name || '';
+        document.getElementById('hrEmpRole').value = user.role || '';
+        document.getElementById('hrEmpSalary').value = user.salary || 4000;
+        document.getElementById('hrEmpAttendance').value = user.attendance || 'Regular';
     }
 
-    function saveCompanyManagedEmployeeData() {
-        const targetId = document.getElementById('editEmpTargetSelect').value;
+    function saveHrEmployeeEdits() {
+        const targetId = document.getElementById('hrEditEmpSelect').value;
         if(!systemUsers[targetId]) return;
 
-        systemUsers[targetId].name = document.getElementById('editEmpName').value.trim();
-        systemUsers[targetId].dept = document.getElementById('editEmpDept').value;
-        systemUsers[targetId].shift = document.getElementById('editEmpShift').value;
-        systemUsers[targetId].role = document.getElementById('editEmpRole').value.trim();
-        systemUsers[targetId].salary = parseFloat(document.getElementById('editEmpSalary').value) || 0;
-        systemUsers[targetId].attendance = document.getElementById('editEmpAttendanceStatus').value;
+        systemUsers[targetId].name = document.getElementById('hrEmpName').value.trim();
+        systemUsers[targetId].role = document.getElementById('hrEmpRole').value.trim();
+        systemUsers[targetId].salary = parseFloat(document.getElementById('hrEmpSalary').value) || 0;
+        systemUsers[targetId].attendance = document.getElementById('hrEmpAttendance').value;
 
         saveCoreStructureToStorage();
-        alert(`Employee profile & dossier for ${targetId} successfully updated by company.`);
-        renderManagerDashboard();
+        alert(`HR payroll and employee record updated successfully for ${targetId}.`);
+    }
+
+    function renderHrComplianceFeed() {
+        const container = document.getElementById('hrComplianceFeed');
+        container.innerHTML = '';
+        
+        Object.keys(systemUsers).forEach(uid => {
+            const user = systemUsers[uid];
+            const card = document.createElement('div');
+            card.className = 'profile-card';
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong>${user.name} (${uid})</strong>
+                    <span style="font-size:12px; background:#fce7f3; color:#db2777; padding:2px 6px; border-radius:4px; font-weight:bold;">${user.attendance || 'Regular'}</span>
+                </div>
+                <div class="metric-row"><span>Department:</span> <strong>${user.dept}</strong></div>
+                <div class="metric-row"><span>Base Salary:</span> <strong>$${user.salary || 4000}</strong></div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // CEO Overview
+    function renderCeoOverview() {
+        const users = Object.keys(systemUsers);
+        let totalWorkers = users.length;
+        let totalPayroll = 0;
+        let totalEffSum = 0;
+        let metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
+
+        users.forEach(uid => {
+            totalPayroll += (systemUsers[uid].salary || 4000);
+            const userTasks = metrics[uid] || [];
+            if(userTasks.length > 0) {
+                const sum = userTasks.reduce((acc, cur) => acc + (cur.completion || 0), 0);
+                totalEffSum += Math.round(sum / userTasks.length);
+            }
+        });
+
+        let avgEff = totalWorkers > 0 ? Math.round(totalEffSum / totalWorkers) : 0;
+
+        document.getElementById('kpiTotalWorkers').innerText = totalWorkers;
+        document.getElementById('kpiAvgEfficiency').innerText = `${avgEff}%`;
+        document.getElementById('kpiTotalPayroll').innerText = `$${totalPayroll.toLocaleString()}`;
+        document.getElementById('kpiWikiGuides').innerText = globalWiki.length;
+    }
+
+    function renderCeoAuditFeed() {
+        const container = document.getElementById('ceoAuditFeed');
+        container.innerHTML = '';
+        const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
+
+        Object.keys(systemUsers).forEach(uid => {
+            const user = systemUsers[uid];
+            const userTasks = metrics[uid] || [];
+            let totalEff = 0;
+            if(userTasks.length > 0) {
+                const sum = userTasks.reduce((acc, cur) => acc + (cur.completion || 0), 0);
+                totalEff = Math.round(sum / userTasks.length);
+            }
+
+            const card = document.createElement('div');
+            card.className = 'profile-card';
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <strong>${user.name} (${uid})</strong>
+                    <span style="font-size:12px; background:#ede9fe; color:#7c3aed; padding:2px 6px; border-radius:4px; font-weight:bold;">${user.type.toUpperCase()}</span>
+                </div>
+                <div class="metric-row"><span>Department:</span> <strong>${user.dept}</strong></div>
+                <div class="metric-row"><span>Role:</span> <strong>${user.role}</strong></div>
+                <div class="metric-row"><span>Salary:</span> <strong>$${user.salary || 4000}</strong></div>
+                <div class="metric-row"><span>Efficiency Score:</span> <strong style="color:var(--primary);">${totalEff}%</strong></div>
+            `;
+            container.appendChild(card);
+        });
     }
 
     // Task Allocation & Handoff Checklist Logic
@@ -832,6 +1017,7 @@
 
     function renderOutboundLiveStream() {
         const container = document.getElementById('liveHandoverContainer');
+        if(!container) return;
         container.innerHTML = '';
         temporaryHandoverList.forEach((t, i) => {
             const div = document.createElement('div');
@@ -879,6 +1065,7 @@
 
     function renderInboundQueue() {
         const container = document.getElementById('inboundTasksContainer');
+        if(!container) return;
         container.innerHTML = '';
         const pipeline = JSON.parse(localStorage.getItem('sys_pipeline')) || [];
         const relevantPackages = pipeline.filter(p => p.dept === activeUser.dept);
@@ -936,9 +1123,9 @@
         logout();
     }
 
-    // Chat System Logic (Supports Groups & Private DMs)
     function populateChatChannels() {
         const select = document.getElementById('chatChannelSelect');
+        if(!select) return;
         select.innerHTML = '';
         select.innerHTML += `<option value="dept_${activeUser.dept}">Department: ${activeUser.dept}</option>`;
         globalGroups.forEach(g => {
@@ -966,9 +1153,10 @@
 
     function loadChatFeed() {
         const select = document.getElementById('chatChannelSelect');
-        if(!select.value) return;
+        if(!select || !select.value) return;
         const channelKey = select.value;
         const box = document.getElementById('chatBox');
+        if(!box) return;
         box.innerHTML = '';
         
         globalChats.forEach(c => {
@@ -1004,16 +1192,16 @@
         loadChatFeed();
     }
 
-    // Manager Dossier Dashboard
     function renderManagerDashboard() {
         const container = document.getElementById('managerMetricsFeed');
+        if(!container) return;
         container.innerHTML = '';
         const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
         const searchQuery = document.getElementById('empSearchInput') ? document.getElementById('empSearchInput').value.toLowerCase() : '';
 
         Object.keys(systemUsers).forEach(uid => {
             const user = systemUsers[uid];
-            if(user.type === 'manager') return;
+            if(user.type === 'manager' || user.type === 'ceo' || user.type === 'hr') return;
 
             if(searchQuery && !uid.toLowerCase().includes(searchQuery) && !user.name.toLowerCase().includes(searchQuery)) {
                 return;
@@ -1048,8 +1236,6 @@
                 </div>
                 <div class="metric-row"><span>Department:</span> <strong>${user.dept}</strong></div>
                 <div class="metric-row"><span>Shift Timing:</span> <strong>${user.shift}</strong></div>
-                <div class="metric-row"><span>Salary:</span> <strong>$${user.salary || 4000}</strong></div>
-                <div class="metric-row"><span>Attendance Status:</span> <strong style="color:var(--success);">${user.attendance || 'Regular'}</strong></div>
                 <div class="metric-row"><span>Overall Efficiency Score:</span> <strong style="color:var(--primary);">${totalEff}%</strong></div>
                 <div style="margin-top:10px; font-size:13px; font-weight:600;">Recent Work History:</div>
                 <div style="background:#ffffff; padding:8px; border-radius:6px; border:1px solid var(--border); margin-top:4px;">
@@ -1058,31 +1244,6 @@
             `;
             container.appendChild(card);
         });
-    }
-
-    function exportMetricsCSV() {
-        let csvContent = "data:text/csv;charset=utf-8,ID,Name,Role,Department,Salary,Attendance,Efficiency\n";
-        const metrics = JSON.parse(localStorage.getItem('sys_metrics')) || {};
-
-        Object.keys(systemUsers).forEach(uid => {
-            const user = systemUsers[uid];
-            if(user.type === 'manager') return;
-            const userTasks = metrics[uid] || [];
-            let totalEff = 0;
-            if(userTasks.length > 0) {
-                const sum = userTasks.reduce((acc, cur) => acc + (cur.completion || 0), 0);
-                totalEff = Math.round(sum / userTasks.length);
-            }
-            csvContent += `${uid},"${user.name}","${user.role}","${user.dept}",${user.salary || 4000},"${user.attendance || 'Regular'}",${totalEff}%\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "employee_dossier_report.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     }
 
     function resetSystemDatabase() {
